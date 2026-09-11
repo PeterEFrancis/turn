@@ -1,20 +1,29 @@
-import { PATTERNS, getPattern, createPreset } from './patterns.js?v=8';
-import {COLORS,createDraft,weave,threadCount,fabricSVG,escapeXML,mod,validateDraft,resizeDraft,chartSVG} from './model.js?v=7';
+import { PATTERNS, getPattern, createPreset } from './patterns.js?v=9';
+import {COLORS,createDraft,weave,wovenPickCount,threadCount,fabricSVG,escapeXML,mod,validateDraft,resizeDraft,chartSVG} from './model.js?v=9';
 const $=s=>document.querySelector(s);let draft=createDraft(),activeColor=COLORS[0].hex,showBack=false;
 function render(){
+const wovenRows=wovenPickCount(draft),hasUnwefted=!!draft.weft?.includes(false);
+$('#pick-count-label').textContent=draft.weft?'Turn rows':'Picks';$('.preview-step').textContent=draft.weft?'1 hole / turn':'1 step / pick';
+$('#draft-notes').hidden=!draft.source&&!draft.notes?.length;
+$('#draft-source').textContent=draft.source||'Pattern notes';
+$('#source-checks').innerHTML=(draft.notes||[]).filter(note=>note.startsWith('Source check:')).map(note=>`<p>${escapeXML(note)}</p>`).join('');
+$('#draft-instructions').innerHTML=(draft.notes||[]).filter(note=>!note.startsWith('Source check:')).map(note=>`<li>${escapeXML(note)}</li>`).join('');
+const previewNote=hasUnwefted?'Preview shows woven sections only. Braided gaps and their length are not simulated.':(draft.notes||[]).find(note=>note.startsWith('This is a flat threading preview.'))||'';
+$('#preview-note').textContent=previewNote;$('#preview-note').hidden=!previewNote;
+
 if(activeColor!==null&&!draft.colors.some(color=>color.hex===activeColor))activeColor=draft.colors[0].hex;
 $('#start-hole').innerHTML=Array.from({length:draft.holes},(_,h)=>`<option value="${h}" ${h===(draft.startHole??draft.holes-1)?'selected':''}>${String.fromCharCode(65+h)}</option>`).join('');
 $('#card-type').value=draft.holes;$('#card-count').value=draft.cards;$('#pick-count').value=draft.picks;$('#draft-name').value=draft.name;
-$('#thread-count').textContent=`${threadCount(draft)} threads`;$('#preview-size').textContent=`${draft.cards} tablets · ${draft.picks} picks`;$('#draft-stats').textContent=`${draft.holes}-hole cards / ${threadCount(draft)} warp threads`;
-$('#ruler-middle').textContent=Math.ceil(draft.picks/2);$('#ruler-end').textContent=draft.picks;
+$('#thread-count').textContent=`${threadCount(draft)} threads`;$('#preview-size').textContent=`${draft.cards} tablets · ${wovenRows} picks${hasUnwefted?` / ${draft.picks} turns`:""}`;$('#draft-stats').textContent=`${draft.holes}-hole cards / ${threadCount(draft)} warp threads`;
+$('#ruler-middle').textContent=Math.ceil(wovenRows/2);$('#ruler-end').textContent=wovenRows;$('#ruler-middle').parentElement.firstElementChild.textContent=wovenRows?'01':'0';
 $('#palette').innerHTML=draft.colors.map(c=>`<button class="swatch" style="--swatch:${c.hex};--check:${parseInt(c.hex.slice(1,3),16)*.299+parseInt(c.hex.slice(3,5),16)*.587+parseInt(c.hex.slice(5,7),16)*.114>160?'#414b3d':'#fff'}" aria-label="Select ${escapeXML(c.name)}" aria-pressed="${activeColor===c.hex}" data-color="${c.hex}" title="${escapeXML(c.name)}"></button>`).join('')+`<button class="swatch empty-swatch" aria-label="Select empty hole" aria-pressed="${activeColor===null}" data-color="empty" title="Empty hole">∅</button>`;
 const pts=Array.from({length:draft.holes},(_,h)=>{const a=-Math.PI/2+Math.PI/draft.holes+(h+draft.holes-1-(draft.startHole??draft.holes-1))*2*Math.PI/draft.holes;return [70+47*Math.cos(a),66+47*Math.sin(a)];});
 $('#card-illustration').innerHTML=`<svg viewBox="0 0 140 132" aria-label="${draft.holes}-hole tablet diagram"><polygon points="${pts.map(p=>p.join(',')).join(' ')}" fill="#f6eddf" stroke="#dacdbc" stroke-width="1.5" stroke-linejoin="round"/>${pts.map(([x,y],h)=>`<circle cx="${70+(x-70)*.68}" cy="${66+(y-66)*.68}" r="4.5" fill="${draft.threads[0][h]??'#fff'}" stroke="#d2bfa5" stroke-width="1"/><text x="${70+(x-70)*1.22}" y="${70+(y-66)*1.22}" text-anchor="middle" fill="#969083" font-size="10">${String.fromCharCode(65+h)}</text>`).join('')}<text x="70" y="70" text-anchor="middle" fill="#b5a996" font-size="16" font-family="serif">${draft.holes}</text></svg>`;
 $('#rotation-label').textContent=`${draft.holes===4?'¼':`1/${draft.holes}`} turn per pick`;$('.card-caption span:last-child').textContent=`A–${String.fromCharCode(64+draft.holes)}`;
 let threading='<span></span>'+Array.from({length:draft.cards},(_,c)=>`<span class="chart-label">${c+1}</span>`).join('');for(let h=0;h<draft.holes;h++){threading+=`<span class="chart-label">${String.fromCharCode(65+h)}</span>`;for(let c=0;c<draft.cards;c++)threading+=`<button class="hole-cell${draft.threads[c][h]===null?' empty-hole':''}" data-card="${c}" data-hole="${h}" style="--thread:${draft.threads[c][h]??'#fff'}" aria-label="Tablet ${c+1}, hole ${String.fromCharCode(65+h)}, ${draft.threads[c][h]??'empty'}" title="Tablet ${c+1} · Hole ${String.fromCharCode(65+h)}">${draft.threads[c][h]===null?'∅':''}</button>`;}
 threading+='<span class="chart-label">↗</span>'+draft.slants.map((s,c)=>`<button class="slant-cell" data-card="${c}" data-slant="${s}" aria-label="Tablet ${c+1}: ${s} threading. Click to flip">${s}</button>`).join('');$('#thread-chart').style.setProperty('--cards',draft.cards);$('#thread-chart').innerHTML=threading;
-let turns='<span class="chart-label column-head">↓</span>'+Array.from({length:draft.cards},(_,c)=>`<span class="chart-label column-head">${c+1}</span>`).join('');for(let r=0;r<draft.picks;r++){turns+=`<button class="pick-label" data-pick="${r}" title="Reverse all tablets in pick ${r+1}" aria-label="Reverse all tablets in pick ${r+1}">${String(r+1).padStart(2,'0')}</button>`;for(let c=0;c<draft.cards;c++)turns+=`<button class="turn-cell" data-card="${c}" data-pick="${r}" data-dir="${draft.turns[r][c]}" aria-label="Pick ${r+1}, tablet ${c+1}: ${draft.turns[r][c]==='F'?'forward':'backward'}. Click to reverse">${draft.turns[r][c]}</button>`;}$('#turn-chart').style.setProperty('--cards',draft.cards);$('#turn-chart').innerHTML=turns;
-$('#woven-preview').innerHTML=fabricSVG(draft,showBack);$('#preview-face').textContent=showBack?'Back of band':'Front of band';updateStateLabels();
+let turns='<span class="chart-label column-head">↓</span>'+(draft.weft?'<span class="chart-label column-head" title="Insert weft">W</span>':'')+Array.from({length:draft.cards},(_,c)=>`<span class="chart-label column-head">${c+1}</span>`).join('');for(let r=0;r<draft.picks;r++){turns+=`<button class="pick-label" data-pick="${r}" title="Reverse all tablets in pick ${r+1}" aria-label="Reverse all tablets in pick ${r+1}">${String(r+1).padStart(2,'0')}${draft.weft?.[r]===false?'*':''}</button>`;if(draft.weft)turns+=`<input class="weft-cell" type="checkbox" data-weft-pick="${r}" aria-label="Insert weft on turn row ${r+1}" title="${draft.weft[r]?'Insert weft':'Turn without weft'}" ${draft.weft[r]?'checked':''}>`;for(let c=0;c<draft.cards;c++)turns+=`<button class="turn-cell" data-card="${c}" data-pick="${r}" data-dir="${draft.turns[r][c]}" aria-label="Pick ${r+1}, tablet ${c+1}: ${draft.turns[r][c]==='F'?'forward':'backward'}. Click to reverse">${draft.turns[r][c]}</button>`;}$('#turn-chart').classList.toggle('with-weft',!!draft.weft);$('#turn-chart').style.setProperty('--cards',draft.cards);$('#turn-chart').innerHTML=turns;
+$('.turning-bottom span:last-child').textContent=draft.weft?'W = insert weft · * = no weft':'Pick 1 at top ↓';$('#woven-preview').innerHTML=fabricSVG(draft,showBack);$('#preview-face').textContent=showBack?'Back of band':'Front of band';updateStateLabels();
 }
 let history=[],future=[],dirty=false,painting=false,paintCheckpoint=false,toastTimer;
 const snapshot=()=>JSON.stringify(draft);
@@ -41,18 +50,19 @@ $('#thread-chart').addEventListener('pointerover',e=>{if(painting&&e.buttons===1
 document.addEventListener('pointerup',()=>{if(painting){painting=false;paintCheckpoint=false;}});
 $('#thread-chart').addEventListener('click',e=>{const hole=e.target.closest('.hole-cell');if(hole){paintCheckpoint=false;paint(hole);paintCheckpoint=false;return;}const cell=e.target.closest('.slant-cell');if(cell){const c=Number(cell.dataset.card);change(()=>draft.slants[c]=draft.slants[c]==='S'?'Z':'S');$(`.slant-cell[data-card="${c}"]`).focus({preventScroll:true});}});
 $('#turn-chart').addEventListener('click',e=>{const cell=e.target.closest('.turn-cell'),row=e.target.closest('.pick-label');if(cell){const r=Number(cell.dataset.pick),c=Number(cell.dataset.card);change(()=>draft.turns[r][c]=draft.turns[r][c]==='F'?'B':'F');$(`.turn-cell[data-pick="${r}"][data-card="${c}"]`).focus({preventScroll:true});}else if(row){const r=Number(row.dataset.pick);change(()=>draft.turns[r]=draft.turns[r].map(d=>d==='F'?'B':'F'));$(`.pick-label[data-pick="${r}"]`).focus({preventScroll:true});}});
+$('#turn-chart').addEventListener('change',e=>{const input=e.target.closest('[data-weft-pick]');if(input){const r=Number(input.dataset.weftPick),checked=input.checked;change(()=>draft.weft[r]=checked);$(`[data-weft-pick="${r}"]`).focus({preventScroll:true});}});
 function applyRepeat(f,b){if(!Number.isInteger(f)||!Number.isInteger(b)||f<0||b<0||f>32||b>32||f+b===0)throw new Error('Use 0–32 turns in each direction, with at least one turn.');change(()=>{draft.turns=Array.from({length:draft.picks},(_,r)=>Array(draft.cards).fill(r%(f+b)<f?'F':'B'));},`Applied ${f} forward / ${b} backward turns.`);}
 $('#apply-repeat').addEventListener('click',()=>{try{applyRepeat(Number($('#forward-count').value),Number($('#backward-count').value));}catch(e){notice(e.message);}});
 $('#all-forward').addEventListener('click',()=>{applyRepeat(draft.holes,0);$('#forward-count').value=draft.holes;$('#backward-count').value=0;});
 for(const [selector,key] of [['#card-count','cards'],['#pick-count','picks']])$(selector).addEventListener('input',e=>{if(e.target.value!==''&&e.target.validity.valid)resize({[key]:Number(e.target.value)});});
 $('#start-hole').addEventListener('change',e=>change(()=>draft.startHole=Number(e.target.value)));
 $('#card-type').addEventListener('change',e=>resize({holes:Number(e.target.value)}));$('#card-count').addEventListener('change',e=>resize({cards:Number(e.target.value)}));$('#pick-count').addEventListener('change',e=>resize({picks:Number(e.target.value)}));
-document.querySelectorAll('[data-step]').forEach(b=>b.addEventListener('click',()=>{const [key,step]=b.dataset.step.split(':');resize({[key]:Math.max(key==='cards'?2:4,Math.min(key==='cards'?48:160,draft[key]+Number(step)))});}));
+document.querySelectorAll('[data-step]').forEach(b=>b.addEventListener('click',()=>{const [key,step]=b.dataset.step.split(':');resize({[key]:Math.max(key==='cards'?2:4,Math.min(key==='cards'?64:160,draft[key]+Number(step)))});}));
 function previewSelectedPattern(){
  const pattern=getPattern($('#preset').value);
  $('#preset-description').textContent=pattern.group==='basic'
   ? `${pattern.description} Uses your current dimensions.`
-  : `${pattern.description} Loads ${pattern.holes}-hole cards, ${pattern.cards} tablets and ${pattern.picks} picks.`;
+  : `${pattern.description} Loads ${pattern.holes}-hole cards, ${pattern.cards} tablets and ${pattern.picks} ${pattern.weftPicks===undefined?'picks':'turn rows'}.`;
 }
 function syncRepeatInputs(){
  const uniform=draft.turns.every(row=>row.every(dir=>dir===row[0]));
@@ -69,21 +79,36 @@ function loadPattern(id){
  return {name:draft.name,holes:draft.holes,cards:draft.cards,picks:draft.picks};
 }
 function renderPatternLibrary(){
- for(const group of ['reference','basic']){
-  const target=group==='reference'?'#reference-patterns':'#basic-patterns';
+ for(const group of ['groff','reference','basic']){
+  const target=`#${group}-patterns`;
   $(target).innerHTML=PATTERNS.filter(pattern=>pattern.group===group).map(pattern=>{
    const sample=createPreset(pattern.id,{holes:draft.holes,cards:draft.cards,picks:draft.picks});
-   const meta=group==='basic'?'Your card type & dimensions':`${sample.cards} tablets · ${sample.picks} picks`;
-   return `<button class="pattern-card" data-pattern="${pattern.id}" aria-label="Load ${escapeXML(pattern.name)}"><span class="pattern-sample">${fabricSVG(sample)}<span class="sample-label">${pattern.kind||'BASIC'}</span></span><span class="pattern-card-copy"><span class="pattern-card-name">${escapeXML(pattern.name)}</span><span class="pattern-card-info">${meta}</span><span class="pattern-card-description">${escapeXML(pattern.description)}</span><span class="pattern-card-action">Use this pattern →</span></span></button>`;
+   const meta=group==='basic'?'Your card type & dimensions':`${sample.cards} tablets · ${sample.picks} ${sample.weft?'turns':'picks'}`;
+   return `<button class="pattern-card" data-pattern="${pattern.id}" aria-label="Load ${escapeXML(pattern.name)}"><span class="pattern-sample">${fabricSVG(sample)}<span class="sample-label">${pattern.kind||'BASIC'}</span></span><span class="pattern-card-copy"><span class="pattern-card-name">${escapeXML(pattern.name)}</span><span class="pattern-card-info">${meta}${pattern.needsReview?' · <b class="source-badge">Source check</b>':''}</span><span class="pattern-card-description">${escapeXML(pattern.description)}</span><span class="pattern-card-action">Use this pattern →</span></span></button>`;
   }).join('');
  }
 }
-const referenceOptions=document.createElement('optgroup');referenceOptions.label='Vines, braids & geometric bands';
-for(const pattern of PATTERNS.filter(pattern=>pattern.group==='reference'))referenceOptions.append(new Option(pattern.name,pattern.id));
-$('#preset').append(referenceOptions);
+for(const [group,label] of [['reference','Vines, braids & geometric bands'],['groff','Groff · All 53 book patterns']]){
+ const options=document.createElement('optgroup');options.label=label;
+ for(const pattern of PATTERNS.filter(pattern=>pattern.group===group))options.append(new Option(pattern.name,pattern.id));
+ $('#preset').append(options);
+}
+function filterPatternLibrary(){
+ const query=$('#pattern-search').value.trim().toLowerCase(),numberQuery=query.match(/^(?:groff\s*|#)0?(\d{1,2})$/);let count=0;
+ for(const card of document.querySelectorAll('[data-pattern]')){
+  const pattern=getPattern(card.dataset.pattern);
+  const number=pattern.group==='groff'?String(Number(pattern.id.slice(6))):'';
+  const text=`${pattern.name} ${pattern.description} ${pattern.cards||''} tablets ${number}`.toLowerCase();
+  card.hidden=numberQuery ? pattern.id!==`groff-${numberQuery[1].padStart(2,'0')}` : !!query&&!query.split(/\s+/).every(word=>text.includes(word));
+  if(!card.hidden)count++;
+ }
+ for(const section of document.querySelectorAll('[data-pattern-group]'))section.hidden=![...section.querySelectorAll('[data-pattern]')].some(card=>!card.hidden);
+ $('#pattern-results').textContent=`${count} ${count===1?'pattern':'patterns'}${query?' found':' in the library'}`;
+}
+$('#pattern-search').addEventListener('input',filterPatternLibrary);
 $('#preset').addEventListener('change',previewSelectedPattern);
 $('#apply-preset').addEventListener('click',()=>loadPattern($('#preset').value));
-$('#browse-patterns').addEventListener('click',()=>{renderPatternLibrary();$('#pattern-dialog').showModal();});
+$('#browse-patterns').addEventListener('click',()=>{renderPatternLibrary();filterPatternLibrary();$('#pattern-dialog').showModal();});
 $('#close-pattern-library').addEventListener('click',()=>$('#pattern-dialog').close());
 $('#pattern-dialog').addEventListener('click',event=>{
  const card=event.target.closest('[data-pattern]');
@@ -110,6 +135,6 @@ if(context?.registerTool){const lifecycle=new AbortController();window.addEventL
 register({name:'list_weaving_patterns',title:'List weaving patterns',description:'List the built-in weaving patterns and the dimensions they load.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true},execute(){return PATTERNS.map(pattern=>({...pattern,holes:pattern.holes||draft.holes,cards:pattern.cards||draft.cards,picks:pattern.picks||draft.picks}));}});
 register({name:'load_weaving_pattern',title:'Load weaving pattern',description:'Replace the draft with a built-in pattern, including its palette, threading and turns. Detailed bands load four-hole cards; basic patterns use current dimensions. Undo restores the previous draft.',inputSchema:{type:'object',properties:{id:{type:'string',enum:PATTERNS.map(pattern=>pattern.id)}},required:['id'],additionalProperties:false},annotations:{readOnlyHint:false},execute(input){if(!input||typeof input.id!=='string'||Object.keys(input).some(key=>key!=='id'))throw new Error('Provide a pattern id.');return loadPattern(input.id);}});
 register({name:'read_weaving_draft',title:'Read weaving draft',description:'Read the current tablet weaving draft, including hole colors, threading, and turns.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true,untrustedContentHint:true},execute(){return JSON.parse(snapshot());}});
-register({name:'configure_weaving_draft',title:'Configure weaving draft',description:'Resize the current draft while retaining existing colors and turns. Added holes use natural thread.',inputSchema:{type:'object',properties:{holes:{type:'integer',minimum:3,maximum:8},cards:{type:'integer',minimum:2,maximum:48},picks:{type:'integer',minimum:4,maximum:160}},additionalProperties:false},annotations:{readOnlyHint:false},execute(input){if(!input||typeof input!=='object'||Object.keys(input).some(k=>!['holes','cards','picks'].includes(k)))throw new Error('Provide holes, cards, or picks.');const next=resizeDraft(draft,input);change(()=>draft=next);return {holes:draft.holes,cards:draft.cards,picks:draft.picks};}});
+register({name:'configure_weaving_draft',title:'Configure weaving draft',description:'Resize the current draft while retaining existing colors and turns. Added holes use natural thread.',inputSchema:{type:'object',properties:{holes:{type:'integer',minimum:3,maximum:8},cards:{type:'integer',minimum:2,maximum:64},picks:{type:'integer',minimum:4,maximum:160}},additionalProperties:false},annotations:{readOnlyHint:false},execute(input){if(!input||typeof input!=='object'||Object.keys(input).some(k=>!['holes','cards','picks'].includes(k)))throw new Error('Provide holes, cards, or picks.');const next=resizeDraft(draft,input);change(()=>draft=next);return {holes:draft.holes,cards:draft.cards,picks:draft.picks};}});
 register({name:'apply_turning_repeat',title:'Apply turning repeat',description:'Replace all turning instructions with repeating forward then backward turns.',inputSchema:{type:'object',properties:{forward:{type:'integer',minimum:0,maximum:32},backward:{type:'integer',minimum:0,maximum:32}},required:['forward','backward'],additionalProperties:false},annotations:{readOnlyHint:false},execute(input){if(!input||Object.keys(input).some(k=>!['forward','backward'].includes(k)))throw new Error('Provide forward and backward turn counts.');applyRepeat(input.forward,input.backward);$('#forward-count').value=input.forward;$('#backward-count').value=input.backward;return {picks:draft.picks,forward:input.forward,backward:input.backward};}});
 }

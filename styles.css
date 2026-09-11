@@ -35,3 +35,22 @@
 .empty-swatch{background:#fff;color:#777;--swatch:#777;--check:#333;font-size:19px;line-height:1}.empty-swatch[aria-pressed=true]:after{content:none}.hole-cell.empty-hole{color:#8b8b82;font-size:14px}.mini-swatch{line-height:12px;text-align:center;color:#777;font-size:11px}
 
 .start-hole-label{display:flex;align-items:center;gap:6px}.start-hole-label select{font-size:12px;padding:2px 4px;border:1px solid #deded8;border-radius:4px;background:#fff;color:inherit}
+
+/* Book collection and source instructions. */
+[hidden]{display:none!important}
+.pattern-search-label{display:block;font-size:12px;font-weight:600;color:#6c7266;margin-bottom:7px}
+.pattern-search{width:100%;padding:12px 14px;border:1px solid #d9dcd2;border-radius:7px;background:white;font-size:14px;color:var(--ink)}
+.pattern-results{font-size:12px;color:#7c8273;margin:9px 0 2px}
+.collection-note{font-size:13px;line-height:1.65;color:#74796f;margin:-4px 0 17px;max-width:760px}
+.source-badge{font-weight:500;color:#975636}
+.draft-notes{margin:-8px 0 24px;padding:16px 19px;border:1px solid #deded3;border-radius:8px;background:#fffef9;font-size:12px;line-height:1.7;color:#72766a}
+#draft-source{font-weight:600;color:#555f50}
+.draft-notes summary{cursor:pointer;color:#8c503b;margin-top:7px}
+.draft-notes ul{padding-left:19px;margin:10px 0 0;max-width:900px}
+.draft-notes li+li{margin-top:6px}
+#source-checks p{margin-top:9px;color:#8a5131}
+.preview-note{font-size:11px;line-height:1.7;margin:0 16px 14px;color:#8b634c;grid-column:1/-1}
+.turn-chart.with-weft{grid-template-columns:32px 22px repeat(var(--cards),minmax(22px,1fr));min-width:calc(var(--cards)*22px + 60px)}
+.weft-cell{width:14px;height:14px;align-self:center;justify-self:center;margin:0;accent-color:#7b856d;cursor:pointer}
+
+@media(min-width:641px) and (max-width:960px){.preview-panel:has(.preview-note:not([hidden])) .fabric-stage{grid-row:4/6}}

@@ -1,4 +1,5 @@
-import { createDraft } from './model.js?v=7';
+import { GROFF_PATTERNS } from './groff-patterns.js?v=9';
+import { createDraft } from './model.js?v=9';
 
 // Holes A–D in each string; chronological F/B picks. Short plans repeat to
 // fill the preset. Rose is a four-thread adaptation of the photographed motif.
@@ -179,6 +180,16 @@ export const PATTERNS = [
   { id: 'blue-scroll', name: 'Blue scroll', group: 'reference', kind: 'Chart draft', technique: 'Individual turns', holes: 4, cards: 18, picks: 20, description: 'Linked black scrolls divide ivory and blue.' },
   { id: 'scarlet-diamonds', name: 'Scarlet diamonds', group: 'reference', kind: 'Chart draft', technique: '4 forward / 4 backward', holes: 4, cards: 24, picks: 32, description: 'Red diamonds framed by crisp ivory zigzags.' },
   { id: 'turquoise-braid', name: 'Turquoise braid', group: 'reference', kind: 'Chart draft', technique: 'Individual turns', holes: 4, cards: 16, picks: 32, description: 'Bright turquoise ribbons inside red and black borders.' },
+  ...GROFF_PATTERNS.map(source => ({
+    id: `groff-${String(source.number).padStart(2, '0')}`,
+    name: `Groff ${String(source.number).padStart(2, '0')} · ${source.title}`,
+    group: 'groff', kind: `GROFF ${String(source.number).padStart(2, '0')}`,
+    holes: 4, cards: source.cards, picks: groffPickCount(source),
+    ...(source.weft ? {weftPicks: source.weft.filter(Boolean).length * groffPickCount(source) / source.repeat.length} : {}),
+    technique: turningSummary(source.repeat),
+    description: source.weft ? 'Woven sections with braided gaps. 72-turn plan, including turns without weft.' : `${turningSummary(source.repeat)}.${source.number === 50 ? ' Split, cross, and rejoin three bands.' : ''}`,
+    needsReview: source.uncertainties.length > 0,
+  })),
   { id: 'chevron', name: 'Classic chevron', group: 'basic', description: 'Mirrored diagonals, turning all tablets forward.' },
   { id: 'diamond', name: 'Nested diamonds', group: 'basic', description: 'Reverse together to turn chevrons into diamonds.' },
   { id: 'stripe', name: 'Simple stripes', group: 'basic', description: 'Solid stripes for exploring your thread palette.' },
@@ -211,5 +222,43 @@ function chartDraft(pattern) {
 export function createPreset(id, { holes = 4, cards = 20, picks = 32 } = {}) {
   const pattern = getPattern(id);
   if (pattern.group === 'basic') return createDraft(holes, cards, picks, id);
+  if (pattern.group === 'groff') return groffDraft(GROFF_PATTERNS.find(source => `groff-${String(source.number).padStart(2, '0')}` === id), pattern);
   return chartDraft(pattern);
+}
+
+function groffPickCount(source) {
+  return source.repeat.length * Math.max(1, Math.ceil(32 / source.repeat.length));
+}
+function turningSummary(repeat) {
+  if ([...repeat].every(turn => turn === 'F')) return 'Continuous forward';
+  const runs = [];
+  for (const turn of repeat) {
+    if (runs.at(-1)?.turn === turn) runs.at(-1).count++;
+    else runs.push({ turn, count: 1 });
+  }
+  return runs.map(({turn, count}) => `${count}${turn}`).join(' / ');
+}
+function groffDraft(source, pattern) {
+  const symbols = source.rows.map(row => [...row]);
+  for (const cell of source.resolvedCells || []) symbols[cell.row][cell.card] = cell.symbol;
+  const colors = [...new Map(Object.values(source.palette).map(color => [color.hex, {...color}])).values()];
+  return {
+    version: 1, name: pattern.name.slice(0, 80), holes: 4, cards: source.cards, picks: pattern.picks,
+    colors,
+    // Source forward A→B→C→D becomes Turn's decreasing clockwise labels.
+    // U→S and D→Z retain the source photo's chevron/stitch relationship.
+    startHole: 0,
+    threads: Array.from({length: source.cards}, (_,card) => [0,3,2,1].map(row => source.palette[symbols[row][card]].hex)),
+    slants: [...source.arrows].map(arrow => arrow === 'U' ? 'S' : 'Z'),
+    turns: Array.from({length: pattern.picks}, (_,pick) => Array(source.cards).fill(source.repeat[pick % source.repeat.length])),
+    ...(source.weft ? {weft: Array.from({length: pattern.picks}, (_,pick) => source.weft[pick % source.weft.length])} : {}),
+    source: `Russell E. Groff, Card Weaving · Pattern ${source.number} · printed p. ${source.printedPage} (PDF p. ${source.pdfPage})`,
+    notes: [
+      `Source pattern: ${source.title}.`,
+      `Turn one hole per step. ${turningSummary(source.repeat)}${source.repeat.includes('B') ? '; repeat this turning sequence.' : '.'}`,
+      'Converted hole labels: Turn A/B/C/D = book A/D/C/B; book up/down arrows = S/Z. Start with A upper-near. Colors approximate the named yarns.',
+      ...source.notes,
+      ...source.uncertainties.map(note => `Source check: ${note}`),
+    ],
+  };
 }
