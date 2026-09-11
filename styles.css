@@ -31,3 +31,7 @@
 .pattern-card-action{font-size:12px;font-weight:600;color:var(--accent);margin-top:auto;padding-top:8px}
 @media(max-width:720px){.pattern-gallery{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.pattern-library-content{padding:16px 20px 22px}#pattern-dialog .dialog-heading{padding:20px}.pattern-sample{height:142px}}
 @media(max-width:540px){.pattern-gallery{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}#pattern-dialog .dialog-heading h2{font-size:21px}.pattern-sample{height:150px}.pattern-card-copy{padding:10px}.pattern-library-content h3{gap:4px;flex-direction:column;align-items:flex-start}.pattern-setting .browse-patterns{white-space:normal;font-size:12px;line-height:1.5}.setting-section.pattern-setting #preset-description{display:block;font-size:12px;min-height:0;margin:10px 0}.pattern-card-description{font-size:12px}}
+
+.empty-swatch{background:#fff;color:#777;--swatch:#777;--check:#333;font-size:19px;line-height:1}.empty-swatch[aria-pressed=true]:after{content:none}.hole-cell.empty-hole{color:#8b8b82;font-size:14px}.mini-swatch{line-height:12px;text-align:center;color:#777;font-size:11px}
+
+.start-hole-label{display:flex;align-items:center;gap:6px}.start-hole-label select{font-size:12px;padding:2px 4px;border:1px solid #deded8;border-radius:4px;background:#fff;color:inherit}

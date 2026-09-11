@@ -12,7 +12,7 @@ test('Every library band loads a complete, editable four-hole draft at its own d
     assert.deepEqual([draft.holes, draft.cards, draft.picks], [4, pattern.cards, pattern.picks]);
     assert.deepEqual(validateDraft(JSON.parse(JSON.stringify(draft))), draft);
     const palette = new Set(draft.colors.map(color => color.hex));
-    assert.ok(draft.threads.flat().every(color => palette.has(color)));
+    assert.ok(draft.threads.flat().every(color => color===null||palette.has(color)));
     const preview = fabricSVG(draft);
     assert.ok(preview.includes(`for ${pattern.cards} tablets and ${pattern.picks} picks`));
     assert.ok(!/NaN|undefined/.test(preview));
@@ -43,8 +43,8 @@ test('Editing one preset does not change its library original or another draft',
   assert.throws(() => createPreset('not-a-pattern'), /Choose a pattern/);
 });
 
-test('Dragon adaptations repeat their curled motif after twenty-four picks', () => {
-  for (const id of ['rose-vine', 'ivory-braid']) {
+test('The Rose adaptation repeats its curled motif after twenty-four picks', () => {
+  for (const id of ['rose-vine']) {
     const draft = createPreset(id);
     assert.equal(draft.cards, 16);
     assert.equal(draft.picks, 48);
@@ -57,7 +57,7 @@ test('Dragon adaptations repeat their curled motif after twenty-four picks', () 
   }
 });
 
-test('Dragon previews have one continuous stem, allowing small detached side accents', () => {
+test('The Rose preview has one continuous stem, allowing small detached side accents', () => {
   // Test the rendered geometry: matching neighboring cell colors alone misses
   // breaks caused by the sloping edges of the woven stitches.
   function shareEdge(a, b) {
@@ -77,7 +77,7 @@ test('Dragon previews have one continuous stem, allowing small detached side acc
     return false;
   }
 
-  for (const [id, colorName] of [['rose-vine', 'Rose'], ['ivory-braid', 'Ivory']]) {
+  for (const [id, colorName] of [['rose-vine', 'Rose']]) {
     const draft = createPreset(id), svg = fabricSVG(draft);
     const foreground = draft.colors.find(color => color.name === colorName).hex;
     const cells = [...svg.matchAll(/<polygon points="([^"]+)" fill="([^"]+)"/g)]

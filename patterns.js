@@ -1,8 +1,8 @@
-import { createDraft } from './model.js?v=6';
+import { createDraft } from './model.js?v=7';
 
 // Holes A–D in each string; chronological F/B picks. Short plans repeat to
-// fill the preset. Dragon drafts are four-thread adaptations of the photographed
-// motifs; Sulawesi follows a clear section of the photographed chart.
+// fill the preset. Ivory follows the missed-hole chart; Rose is a four-thread
+// adaptation. Sulawesi follows a clear section of the photographed chart.
 // See README for reconstruction details and sources.
 const CHART_DRAFTS = {
   "golden-ramshorns": {
@@ -20,11 +20,15 @@ const CHART_DRAFTS = {
     turns: ["FFFFFBBBFFFBBFFF", "FFFFBBBBFFFFFFFF", "FFFBBBBBBFFFFFFF", "FFFBBBBFFFFFFFFF", "FFFBBBBFFBFFFFFF", "FFFFFFFFFFFFBFFF", "FFFFFFFFFFBBFFFF", "FFFFFFFBBBBBBFFF", "FFFBFFFBBBBBBFFF", "FFFBFFFBBBBBFFFF", "FFFBBFFBBBBFBFFF", "FFFBBBBBBBBBBFFF", "FFFFFBBBFFFBBFFF", "FFFBBBBBFFFFFFFF", "FFFBBBBBFFFFFFFF", "FFFBBBBFBFFFFFFF", "FFFBBBFBBFFFFFFF", "FFFFBBBBBBBBBFFF", "FFFBFFBBBBBBBFFF", "FFFFFFFFFBBBBFFF", "FFFFFFFFFBBBFFFF", "FFFFFFFFFBBBFFFF", "FFFBFFFFFBBFFFFF", "FFFBBFFFFFFFFFFF"],
   },
   "ivory-braid": {
+    // Literal A–D threading from the napkin: '.' is an unthreaded hole.
+    // Read paired rows downward; T is interpreted as toward/backward.
+    // The four fully threaded border tablets are inferred from the photo.
+    startHole: 0, // Interpret the source start sketch as A upper-near.
     palette: {"I": "#f0e8d1", "B": "#234a75", "G": "#c6ad53"},
     paletteNames: {"I": "Ivory", "B": "Blue", "G": "Golden edge"},
-    threading: ["BBBB", "GGGG", "BBBB", "IBBB", "BIIB", "BBIB", "BIBB", "IBBB", "BBBI", "BBIB", "BIBB", "BIIB", "BIBB", "BBBB", "GGGG", "BBBB"],
-    slants: "ZZSSSSSSSSSSSSZZ",
-    turns: ["FFFFFBBBFFFBBFFF", "FFFFBBBBFFFFFFFF", "FFFBBBBBBFFFFFFF", "FFFBBBBFFFFFFFFF", "FFFBBBBFFBFFFFFF", "FFFFFFFFFFFFBFFF", "FFFFFFFFFFBBFFFF", "FFFFFFFBBBBBBFFF", "FFFBFFFBBBBBBFFF", "FFFBFFFBBBBBFFFF", "FFFBBFFBBBBFBFFF", "FFFBBBBBBBBBBFFF", "FFFFFBBBFFFBBFFF", "FFFBBBBBFFFFFFFF", "FFFBBBBBFFFFFFFF", "FFFBBBBFBFFFFFFF", "FFFBBBFBBFFFFFFF", "FFFFBBBBBBBBBFFF", "FFFBFFBBBBBBBFFF", "FFFFFFFFFBBBBFFF", "FFFFFFFFFBBBFFFF", "FFFFFFFFFBBBFFFF", "FFFBFFFFFBBFFFFF", "FFFBBFFFFFFFFFFF"],
+    threading: ["BBBB", "GGGG", ".B.I", "B.I.", ".I.B", "I.B.", ".B.I", "B.I.", ".I.B", "I.B.", ".B.I", "B.I.", ".I.B", "I.B.", "GGGG", "BBBB"],
+    slants: "ZZZZZZZZZZZZZZZZ",
+    turns: ["FFBBFFFFFFBBFFFF", "FFBBFFFFFFBBFFFF", "FFBBBBBBFFFFFFFF", "FFBBBBBBFFFFFFFF", "FFFFBBBBBBFFBBFF", "FFFFBBBBBBFFBBFF", "FFBBFFBBBBBBFFFF", "FFBBFFBBBBBBFFFF", "FFFFFFFFBBBBBBFF", "FFFFFFFFBBBBBBFF", "FFFFBBFFFFFFBBFF", "FFFFBBFFFFFFBBFF"],
   },
   "ember-lattice": {
     palette: {"K": "#080808", "R": "#bf2314", "G": "#a38e55", "N": "#f1e3c9"},
@@ -188,7 +192,7 @@ const CHART_DRAFTS = {
 
 export const PATTERNS = [
   { id: 'rose-vine', name: 'Rose vine', group: 'reference', kind: '4-thread version', technique: 'Dublin dragons', holes: 4, cards: 16, picks: 48, description: 'Alternating rose dragon curls and small side accents on navy.' },
-  { id: 'ivory-braid', name: 'Ivory braid', group: 'reference', kind: '4-thread version', technique: 'Dublin dragons', holes: 4, cards: 16, picks: 48, description: 'Ivory dragon curls framed by narrow blue and gold borders.' },
+  { id: 'ivory-braid', name: 'Ivory braid', group: 'reference', kind: '2-thread chart', technique: 'Dublin dragons', holes: 4, cards: 16, picks: 48, description: 'The handwritten two-thread chart, with empty holes and blue and gold borders.' },
   { id: 'ember-lattice', name: 'Ember lattice', group: 'reference', kind: 'Chart draft', technique: 'Individual turns', holes: 4, cards: 28, picks: 46, description: 'Red and gold ribbons weave through black diamonds.' },
   { id: 'blue-scroll', name: 'Blue scroll', group: 'reference', kind: 'Chart draft', technique: 'Individual turns', holes: 4, cards: 18, picks: 20, description: 'Linked black scrolls divide ivory and blue.' },
   { id: 'scarlet-diamonds', name: 'Scarlet diamonds', group: 'reference', kind: 'Chart draft', technique: '4 forward / 4 backward', holes: 4, cards: 24, picks: 32, description: 'Red diamonds framed by crisp ivory zigzags.' },
@@ -211,12 +215,13 @@ function chartDraft(pattern) {
   const names = { K: 'Black', R: 'Red', G: pattern.id === 'turquoise-braid' ? 'Silver' : 'Antique gold', N: 'Natural', W: 'Ivory', U: pattern.id === 'blue-scroll' ? 'Azure' : 'Turquoise' };
   return {
     version: 1,
+    ...(source.startHole===undefined?{}:{startHole:source.startHole}),
     name: pattern.name,
     holes: 4,
     cards: pattern.cards,
     picks: pattern.picks,
     colors: Object.entries(source.palette).map(([symbol, hex]) => ({ name: source.paletteNames?.[symbol] || names[symbol], hex })),
-    threads: source.threading.map(card => [...card].map(hole => source.palette[hole])),
+    threads: source.threading.map(card => [...card].map(hole => hole==='.'?null:source.palette[hole])),
     slants: [...source.slants],
     turns: Array.from({ length: pattern.picks }, (_,pick) => [...source.turns[pick % source.turns.length]]),
   };
