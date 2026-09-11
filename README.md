@@ -2,7 +2,11 @@
 
 A dependency-free, browser-based tablet weaving drafter. Supports 3–8 perimeter holes, 2–48 tablets, and 4–160 picks, with color painting, S/Z threading, individual and repeating turns, undo/redo, JSON save/open, SVG export, and printable instructions.
 
-Run `npm start` and open `http://localhost:5173`. Run the model regression checks with `npm test`. Authored static website files are in `dist/`; no build step is required.
+Run `npm start` and open `http://localhost:5173`. Run the model regression checks with `npm test`. The static website files live at the repository root; no build step is required.
+
+## Publishing
+
+Live at [peterefrancis.com/turn](https://peterefrancis.com/turn/). GitHub Pages serves the root of the `main` branch in [PeterEFrancis/turn](https://github.com/PeterEFrancis/turn). Push changes to `main` to update the website. The custom domain is inherited from the main personal website; this project does not need a CNAME file.
 
 ## Draft convention
 

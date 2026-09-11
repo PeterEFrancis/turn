@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createDraft,weave,resizeDraft,validateDraft,chartSVG} from '../dist/model.js';
+import {createDraft,weave,resizeDraft,validateDraft,chartSVG} from '../model.js';
 for(let n=3;n<=8;n++){
  test(`${n}-hole full revolutions and reversals follow the stated card convention`,()=>{
   let d=createDraft(n,2,n*2);d.turns=Array.from({length:n*2},(_,r)=>Array(2).fill(r<n?'F':'B'));
