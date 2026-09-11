@@ -1,4 +1,4 @@
-import { PATTERNS, getPattern, createPreset } from './patterns.js';
+import { PATTERNS, getPattern, createPreset } from './patterns.js?v=5';
 import {COLORS,createDraft,weave,fabricSVG,escapeXML,mod,validateDraft,resizeDraft,chartSVG} from './model.js?v=4';
 const $=s=>document.querySelector(s);let draft=createDraft(),activeColor=COLORS[0].hex,showBack=false;
 function render(){

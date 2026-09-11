@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { PATTERNS, createPreset } from '../patterns.js';
-import { weave, resizeDraft, validateDraft, fabricSVG, chartSVG } from '../model.js';
+import { weave, validateDraft, fabricSVG, chartSVG } from '../model.js';
 
 const bands = PATTERNS.filter(pattern => pattern.group === 'reference');
 
@@ -43,21 +43,85 @@ test('Editing one preset does not change its library original or another draft',
   assert.throws(() => createPreset('not-a-pattern'), /Choose a pattern/);
 });
 
-test('Photo adaptations weave color pairs and repeat seamlessly from their real turning plans', () => {
-  for (const id of ['rose-vine', 'ivory-braid', 'golden-ramshorns']) {
+test('Dragon adaptations repeat their curled motif after twenty-four picks', () => {
+  for (const id of ['rose-vine', 'ivory-braid']) {
     const draft = createPreset(id);
-    const fabric = weave(draft);
-    for (let row = 0; row < draft.picks; row += 2) {
-      assert.deepEqual(draft.turns[row], draft.turns[row + 1]);
-      assert.deepEqual(fabric[row].map(cell => cell.color), fabric[row + 1].map(cell => cell.color));
+    assert.equal(draft.cards, 16);
+    assert.equal(draft.picks, 48);
+    const fabric = weave(draft).map(row => row.map(({color, slant}) => ({color, slant})));
+    assert.deepEqual(fabric.slice(0, 24), fabric.slice(24));
+    for (let card = 2; card < 14; card++) {
+      const turns = draft.turns.slice(0, 24).reduce((twist, row) => twist + (row[card] === 'F' ? 1 : -1), 0);
+      assert.equal(Math.abs(turns) % 4, 0, 'Each repeat returns the tablet to its starting phase');
     }
-    const doubled = weave(resizeDraft(draft, { picks: draft.picks * 2 }));
-    assert.deepEqual(doubled.slice(0, draft.picks).map(row => row.map(cell => cell.color)), doubled.slice(draft.picks).map(row => row.map(cell => cell.color)));
   }
-  const rose = createPreset('rose-vine');
-  const roseColor = rose.colors[0].hex;
-  const firstLeaf = weave(rose)[0].slice(2, -2).map(cell => cell.color === roseColor ? '1' : '0').join('');
-  assert.equal(firstLeaf, '00000000111100000000');
+});
+
+test('Dragon previews have one continuous stem, allowing small detached side accents', () => {
+  // Test the rendered geometry: matching neighboring cell colors alone misses
+  // breaks caused by the sloping edges of the woven stitches.
+  function shareEdge(a, b) {
+    const epsilon = 0.001;
+    for (let i = 0; i < a.length; i++) for (let j = 0; j < b.length; j++) {
+      const p = a[i], q = a[(i + 1) % a.length];
+      const r = b[j], s = b[(j + 1) % b.length];
+      const dx = q[0] - p[0], dy = q[1] - p[1], length = Math.hypot(dx, dy);
+      if (length < epsilon) continue;
+      const distanceFromLine = v => Math.abs(dx * (v[1] - p[1]) - dy * (v[0] - p[0])) / length;
+      if (distanceFromLine(r) > epsilon || distanceFromLine(s) > epsilon) continue;
+      const alongEdge = v => ((v[0] - p[0]) * dx + (v[1] - p[1]) * dy) / length;
+      const start = Math.max(0, Math.min(alongEdge(r), alongEdge(s)));
+      const end = Math.min(length, Math.max(alongEdge(r), alongEdge(s)));
+      if (end - start > epsilon) return true; // A shared point does not join a ribbon.
+    }
+    return false;
+  }
+
+  for (const [id, colorName] of [['rose-vine', 'Rose'], ['ivory-braid', 'Ivory']]) {
+    const draft = createPreset(id), svg = fabricSVG(draft);
+    const foreground = draft.colors.find(color => color.name === colorName).hex;
+    const cells = [...svg.matchAll(/<polygon points="([^"]+)" fill="([^"]+)"/g)]
+      .filter(match => match[2] === foreground)
+      .map(match => match[1].split(' ').map(point => point.split(',').map(Number)));
+    const visited = new Set(), groups = [];
+    for (let first = 0; first < cells.length; first++) {
+      if (visited.has(first)) continue;
+      const pending = [first], group = [];
+      visited.add(first);
+      while (pending.length) {
+        const current = pending.pop();
+        group.push(current);
+        for (let next = 0; next < cells.length; next++) {
+          if (!visited.has(next) && shareEdge(cells[current], cells[next])) {
+            visited.add(next);
+            pending.push(next);
+          }
+        }
+      }
+      groups.push(group);
+    }
+    const stem = groups.sort((a, b) => b.length - a.length)[0];
+    assert.ok(stem?.length >= cells.length * 0.85, `${id}: most foreground stitches must form one ribbon`);
+    const heights = stem.flatMap(cell => cells[cell].map(point => point[1]));
+    const height = Number(svg.match(/viewBox="0 0 [\d.]+ ([\d.]+)"/)[1]);
+    assert.equal(Math.min(...heights), 0, `${id}: the stem must reach the top`);
+    assert.ok(Math.abs(Math.max(...heights) - height) < 0.001, `${id}: the stem must reach the bottom`);
+  }
+});
+
+test('Golden horns use offset Sulawesi pairs and a complete 36-pick motif repeat', () => {
+  const draft = createPreset('golden-ramshorns');
+  assert.equal(draft.cards, 20);
+  assert.equal(draft.picks, 72);
+  assert.equal(draft.colors.length, 4);
+  for (let card = 2; card < 18; card += 2) {
+    assert.equal(draft.slants[card], draft.slants[card + 1]);
+    assert.notDeepEqual(draft.threads[card], draft.threads[card + 1]);
+    for (const row of draft.turns) assert.equal(row[card], row[card + 1]);
+  }
+  for (let pick = 0; pick < draft.picks; pick += 2) assert.deepEqual(draft.turns[pick], draft.turns[pick + 1]);
+  const fabric = weave(draft).map(row => row.map(({color, slant}) => ({color, slant})));
+  assert.deepEqual(fabric.slice(0, 36), fabric.slice(36));
 });
 
 test('Blue scroll retains the selective four-pick reversals from the reference chart', () => {
