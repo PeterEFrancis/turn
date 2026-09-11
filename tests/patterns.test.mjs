@@ -6,7 +6,7 @@ import { weave, validateDraft, fabricSVG, chartSVG } from '../model.js';
 const bands = PATTERNS.filter(pattern => pattern.group === 'reference');
 
 test('Every library band loads a complete, editable four-hole draft at its own dimensions', () => {
-  assert.equal(bands.length, 7);
+  assert.equal(bands.length, 5);
   for (const pattern of bands) {
     const draft = createPreset(pattern.id, { holes: 8, cards: 6, picks: 4 });
     assert.deepEqual([draft.holes, draft.cards, draft.picks], [4, pattern.cards, pattern.picks]);
@@ -107,21 +107,6 @@ test('The Rose preview has one continuous stem, allowing small detached side acc
     assert.equal(Math.min(...heights), 0, `${id}: the stem must reach the top`);
     assert.ok(Math.abs(Math.max(...heights) - height) < 0.001, `${id}: the stem must reach the bottom`);
   }
-});
-
-test('Golden horns use offset Sulawesi pairs and a complete 36-pick motif repeat', () => {
-  const draft = createPreset('golden-ramshorns');
-  assert.equal(draft.cards, 20);
-  assert.equal(draft.picks, 72);
-  assert.equal(draft.colors.length, 4);
-  for (let card = 2; card < 18; card += 2) {
-    assert.equal(draft.slants[card], draft.slants[card + 1]);
-    assert.notDeepEqual(draft.threads[card], draft.threads[card + 1]);
-    for (const row of draft.turns) assert.equal(row[card], row[card + 1]);
-  }
-  for (let pick = 0; pick < draft.picks; pick += 2) assert.deepEqual(draft.turns[pick], draft.turns[pick + 1]);
-  const fabric = weave(draft).map(row => row.map(({color, slant}) => ({color, slant})));
-  assert.deepEqual(fabric.slice(0, 36), fabric.slice(36));
 });
 
 test('Blue scroll retains the selective four-pick reversals from the reference chart', () => {

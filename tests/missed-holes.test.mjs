@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createDraft,validateDraft,resizeDraft,threadCount,chartSVG,fabricSVG,weave} from '../model.js';
-import {createPreset} from '../patterns.js';
 
 test('Empty holes remain empty through save/open, resizing, and adding tablets',()=>{
  const draft=createDraft(4,2,12);
@@ -17,30 +16,12 @@ test('Empty holes remain empty through save/open, resizing, and adding tablets',
  }
 });
 
-test('Ivory follows the photographed opposite-hole threading and paired T marks',()=>{
- const draft=createPreset('ivory-braid');
- const blue='#234a75',ivory='#f0e8d1';
- const expected=[[null,blue,null,ivory],[blue,null,ivory,null],[null,ivory,null,blue],[ivory,null,blue,null]];
- assert.equal(draft.cards,16);
- for(let card=0;card<12;card++){
-  assert.deepEqual(draft.threads[card+2],expected[card%4]);
-  assert.equal(draft.slants[card+2],'Z');
- }
- const marked=[[1,2,9,10],[1,2,3,4,5,6],[3,4,5,6,7,8,11,12],[1,2,5,6,7,8,9,10],[7,8,9,10,11,12],[3,4,11,12]];
- for(let pick=0;pick<draft.picks;pick++){
-  const backwards=draft.turns[pick].slice(2,14).flatMap((dir,index)=>dir==='B'?[index+1]:[]);
-  assert.deepEqual(backwards,marked[Math.floor((pick%12)/2)]);
-  for(const card of [0,1,14,15])assert.equal(draft.turns[pick][card],'F');
- }
- assert.equal(threadCount(draft),40);
- const fabric=weave(draft).map(row=>row.map(({color,slant})=>({color,slant})));
- assert.deepEqual(fabric.slice(0,12),fabric.slice(12,24));
-});
-
 test('Empty holes export as empty symbols and count only actual warp threads',()=>{
- const draft=createPreset('ivory-braid'),svg=chartSVG(draft);
- assert.ok(svg.includes('40 warp threads'));
- assert.equal([...svg.matchAll(/>∅<\/text>/g)].length,24);
+ const draft=createDraft(4,2,12);
+ draft.threads[0][0]=null;draft.threads[0][2]=null;
+ const svg=chartSVG(draft);
+ assert.ok(svg.includes('6 warp threads'));
+ assert.equal([...svg.matchAll(/>∅<\/text>/g)].length,2);
  for(const output of [svg,fabricSVG(draft),fabricSVG(draft,true)])assert.ok(!/NaN|undefined|fill="null"|stroke="null"/.test(output));
 });
 
@@ -49,7 +30,6 @@ test('A selected starting hole changes the first exposed thread and survives sav
  assert.equal(weave(draft)[0][0].hole,0);
  assert.deepEqual(validateDraft(JSON.parse(JSON.stringify(draft))),draft);
  assert.ok(chartSVG(draft).includes('Start with B upper-far, A upper-near.'));
- assert.equal(createPreset('ivory-braid').startHole,0);
  const resized=resizeDraft({...draft,holes:4,startHole:3},{holes:3});
  assert.equal(resized.startHole,2);
  for(const startHole of [-1,4,0.5,'A',null])assert.throws(()=>validateDraft({...draft,startHole}));

@@ -1,17 +1,10 @@
 import { createDraft } from './model.js?v=7';
 
 // Holes A–D in each string; chronological F/B picks. Short plans repeat to
-// fill the preset. Ivory follows the missed-hole chart; Rose is a four-thread
-// adaptation. Sulawesi follows a clear section of the photographed chart.
+// fill the preset. Rose is a four-thread adaptation of the photographed motif.
 // See README for reconstruction details and sources.
 const CHART_DRAFTS = {
-  "golden-ramshorns": {
-    palette: {"G": "#d9b96f", "W": "#f2e9ce", "K": "#211a17", "R": "#a52c26"},
-    paletteNames: {"G": "Gold", "W": "Ivory", "K": "Charcoal", "R": "Madder red"},
-    threading: ["GGGG", "KKKK", "KGKR", "GKRK", "GKRK", "KGKR", "KGKR", "GKRK", "WKRK", "KWKR", "KWKR", "WKRK", "GKRK", "KGKR", "KGKR", "GKRK", "GKRK", "KGKR", "KKKK", "GGGG"],
-    slants: "SZSSZZSSZZSSZZSSZZSZ",
-    turns: ["FFFFFFFFBBBBFFFFFFFF", "FFFFFFFFBBBBFFFFFFFF", "FFBBBBBBBBFFBBBBBBFF", "FFBBBBBBBBFFBBBBBBFF", "FFFFFFBBBBFFBBFFFFFF", "FFFFFFBBBBFFBBFFFFFF", "FFBBFFBBBBFFBBFFBBFF", "FFBBFFBBBBFFBBFFBBFF", "FFBBFFBBFFFFBBFFBBFF", "FFBBFFBBFFFFBBFFBBFF", "FFFFBBFFFFBBFFBBFFFF", "FFFFBBFFFFBBFFBBFFFF", "FFFFBBBBFFBBFFBBFFFF", "FFFFBBBBFFBBFFBBFFFF", "FFBBBBFFFFBBFFBBBBFF", "FFBBBBFFFFBBFFBBBBFF", "FFBBBBFFBBBBFFFFFFFF", "FFBBBBFFBBBBFFFFFFFF", "FFFFBBBBFFFFFFFFBBFF", "FFFFBBBBFFFFFFFFBBFF", "FFFFBBBBFFBBFFFFBBFF", "FFFFBBBBFFBBFFFFBBFF", "FFBBBBBBFFFFBBFFFFFF", "FFBBBBBBFFFFBBFFFFFF", "FFFFFFBBBBFFBBFFFFFF", "FFFFFFBBBBFFBBFFFFFF", "FFBBFFBBFFFFBBFFBBFF", "FFBBFFBBFFFFBBFFBBFF", "FFBBFFBBBBFFFFFFBBFF", "FFBBFFBBBBFFFFFFBBFF", "FFFFBBBBFFFFBBBBFFFF", "FFFFBBBBFFFFBBBBFFFF", "FFFFBBFFBBFFFFBBFFFF", "FFFFBBFFBBFFFFBBFFFF", "FFBBBBFFBBBBFFBBBBFF", "FFBBBBFFBBBBFFBBBBFF"],
-  },
+
   "rose-vine": {
     palette: {"R": "#e7a2b3", "K": "#172e4b", "U": "#284f70"},
     paletteNames: {"R": "Rose", "K": "Midnight blue", "U": "Blue edge"},
@@ -19,17 +12,7 @@ const CHART_DRAFTS = {
     slants: "SZSSSSSSSSSSSSSZ",
     turns: ["FFFFFBBBFFFBBFFF", "FFFFBBBBFFFFFFFF", "FFFBBBBBBFFFFFFF", "FFFBBBBFFFFFFFFF", "FFFBBBBFFBFFFFFF", "FFFFFFFFFFFFBFFF", "FFFFFFFFFFBBFFFF", "FFFFFFFBBBBBBFFF", "FFFBFFFBBBBBBFFF", "FFFBFFFBBBBBFFFF", "FFFBBFFBBBBFBFFF", "FFFBBBBBBBBBBFFF", "FFFFFBBBFFFBBFFF", "FFFBBBBBFFFFFFFF", "FFFBBBBBFFFFFFFF", "FFFBBBBFBFFFFFFF", "FFFBBBFBBFFFFFFF", "FFFFBBBBBBBBBFFF", "FFFBFFBBBBBBBFFF", "FFFFFFFFFBBBBFFF", "FFFFFFFFFBBBFFFF", "FFFFFFFFFBBBFFFF", "FFFBFFFFFBBFFFFF", "FFFBBFFFFFFFFFFF"],
   },
-  "ivory-braid": {
-    // Literal A–D threading from the napkin: '.' is an unthreaded hole.
-    // Read paired rows downward; T is interpreted as toward/backward.
-    // The four fully threaded border tablets are inferred from the photo.
-    startHole: 0, // Interpret the source start sketch as A upper-near.
-    palette: {"I": "#f0e8d1", "B": "#234a75", "G": "#c6ad53"},
-    paletteNames: {"I": "Ivory", "B": "Blue", "G": "Golden edge"},
-    threading: ["BBBB", "GGGG", ".B.I", "B.I.", ".I.B", "I.B.", ".B.I", "B.I.", ".I.B", "I.B.", ".B.I", "B.I.", ".I.B", "I.B.", "GGGG", "BBBB"],
-    slants: "ZZZZZZZZZZZZZZZZ",
-    turns: ["FFBBFFFFFFBBFFFF", "FFBBFFFFFFBBFFFF", "FFBBBBBBFFFFFFFF", "FFBBBBBBFFFFFFFF", "FFFFBBBBBBFFBBFF", "FFFFBBBBBBFFBBFF", "FFBBFFBBBBBBFFFF", "FFBBFFBBBBBBFFFF", "FFFFFFFFBBBBBBFF", "FFFFFFFFBBBBBBFF", "FFFFBBFFFFFFBBFF", "FFFFBBFFFFFFBBFF"],
-  },
+
   "ember-lattice": {
     palette: {"K": "#080808", "R": "#bf2314", "G": "#a38e55", "N": "#f1e3c9"},
     threading: ["KKKK", "KKKK", "RRKG", "GRNK", "KGRN", "NKGR", "RNKG", "GRNK", "KGRN", "NKGR", "RNKG", "GRNK", "KGRN", "NKGR", "GKNR", "KNRG", "NRGK", "RGKN", "GKNR", "KNRG", "NRGK", "RGKN", "GKNR", "KNRG", "NRGK", "RRKN", "KKKK", "KKKK"],
@@ -192,11 +175,9 @@ const CHART_DRAFTS = {
 
 export const PATTERNS = [
   { id: 'rose-vine', name: 'Rose vine', group: 'reference', kind: '4-thread version', technique: 'Dublin dragons', holes: 4, cards: 16, picks: 48, description: 'Alternating rose dragon curls and small side accents on navy.' },
-  { id: 'ivory-braid', name: 'Ivory braid', group: 'reference', kind: '2-thread chart', technique: 'Dublin dragons', holes: 4, cards: 16, picks: 48, description: 'The handwritten two-thread chart, with empty holes and blue and gold borders.' },
   { id: 'ember-lattice', name: 'Ember lattice', group: 'reference', kind: 'Chart draft', technique: 'Individual turns', holes: 4, cards: 28, picks: 46, description: 'Red and gold ribbons weave through black diamonds.' },
   { id: 'blue-scroll', name: 'Blue scroll', group: 'reference', kind: 'Chart draft', technique: 'Individual turns', holes: 4, cards: 18, picks: 20, description: 'Linked black scrolls divide ivory and blue.' },
   { id: 'scarlet-diamonds', name: 'Scarlet diamonds', group: 'reference', kind: 'Chart draft', technique: '4 forward / 4 backward', holes: 4, cards: 24, picks: 32, description: 'Red diamonds framed by crisp ivory zigzags.' },
-  { id: 'golden-ramshorns', name: 'Golden ram’s horns', group: 'reference', kind: 'Sulawesi', technique: 'Paired tablets', holes: 4, cards: 20, picks: 72, description: 'Gold diamond scrolls around an ivory stem, with red and charcoal accents.' },
   { id: 'turquoise-braid', name: 'Turquoise braid', group: 'reference', kind: 'Chart draft', technique: 'Individual turns', holes: 4, cards: 16, picks: 32, description: 'Bright turquoise ribbons inside red and black borders.' },
   { id: 'chevron', name: 'Classic chevron', group: 'basic', description: 'Mirrored diagonals, turning all tablets forward.' },
   { id: 'diamond', name: 'Nested diamonds', group: 'basic', description: 'Reverse together to turn chevrons into diamonds.' },
