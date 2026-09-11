@@ -5,3 +5,29 @@
 /* Keep instructional text legible while letting the draft itself stay compact. */
 .panel-heading{height:54px}.chart-help{padding-top:14px;padding-bottom:14px}.workspace-heading{margin-bottom:23px}.panel-meta,.preview-toolbar,.preview-caption,.preview-footer p,.workspace-footer,.hint,.threading-bottom,.turning-bottom{font-size:12px}.preview-footer .btn{font-size:14px}.text-button{font-size:12px}.turn-key,.turn-toolbar{font-size:12px}.preview-step{font-size:11px;color:#aaa99b}.help-content p{font-size:16px}.help-content a{color:#b44735}.eyebrow{font-size:12px}.live-badge{font-size:10px}.brand-description{font-size:12px}.preview-footer{padding-top:15px}.card-illustration svg{transform:rotate(0deg)}.hole-cell:focus-visible,.turn-cell:focus-visible{z-index:3}.chart-label,.turn-cell,.pick-label{font-size:11px}
 @media(max-width:1180px){.turn-key>span{font-size:0}.turn-key i{font-size:11px}.threading-bottom,.turning-bottom{font-size:11px}.chart-help{font-size:12px}}@media(max-width:640px){.hint{font-size:12px}.threading-bottom,.turning-bottom{flex-wrap:wrap;font-size:12px}.chart-help{flex-wrap:wrap}.turn-toolbar{gap:5px;flex-wrap:wrap}.brand-description{display:none}.workspace-heading p{font-size:14px}.preview-footer .btn{font-size:14px}.fabric-stage{max-height:610px}.preview-step{font-size:12px}}
+
+/* Pattern library: thumbnails are generated from the editable draft itself. */
+.browse-patterns{margin-top:8px;font-size:13px;padding-left:3px;padding-right:3px;color:var(--accent)}
+#preset-description{min-height:40px;margin-bottom:13px}
+#pattern-dialog{width:min(950px,calc(100vw - 32px));max-height:90vh;background:#fcfcfa}
+#pattern-dialog .dialog-heading{z-index:2;align-items:center;padding:22px 28px}
+#pattern-dialog .dialog-heading .eyebrow{display:block;margin-bottom:7px;font-size:11px}
+#pattern-dialog .dialog-heading h2{font-size:25px;letter-spacing:-.7px}
+.pattern-library-content{padding:19px 28px 28px}
+#pattern-library-description{max-width:720px;color:#74796f;font-size:14px;line-height:1.7;margin-bottom:23px}
+.pattern-library-content h3{font-family:'Manrope',sans-serif;font-size:16px;font-weight:750;margin:25px 0 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.pattern-library-content h3 span{font-family:'DM Sans',sans-serif;font-size:12px;font-weight:450;color:#838879}
+.pattern-gallery{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px}
+.pattern-card{appearance:none;display:flex;flex-direction:column;align-items:stretch;border:1px solid #e1e2d9;background:#fff;border-radius:8px;padding:0;text-align:left;min-width:0;overflow:hidden;cursor:pointer;color:var(--ink)}
+.pattern-card:hover{border-color:#bd6c56;box-shadow:0 3px 13px #71503515}
+.pattern-card:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.pattern-sample{height:156px;display:flex;align-items:center;justify-content:center;background:#f3f2ec;padding:12px;overflow:hidden;position:relative;border-bottom:1px solid #e8e8df}
+.pattern-sample svg{display:block;height:100%;width:auto;max-width:100%;filter:drop-shadow(2px 3px 2px #23291d25)}
+.pattern-card .sample-label{position:absolute;right:7px;top:7px;border-radius:3px;padding:3px 5px;font-size:10px;font-weight:600;color:#777c70;background:#fffdf8e8;letter-spacing:.3px}
+.pattern-card-copy{padding:12px;display:flex;flex-direction:column;gap:5px;flex:1}
+.pattern-card-name{font-family:'Manrope',sans-serif;font-size:14px;font-weight:750;line-height:1.5}
+.pattern-card-info{font-size:12px;line-height:1.5;color:#7b8173}
+.pattern-card-description{font-size:12px;line-height:1.55;color:#8b8b80;margin-top:3px}
+.pattern-card-action{font-size:12px;font-weight:600;color:var(--accent);margin-top:auto;padding-top:8px}
+@media(max-width:720px){.pattern-gallery{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.pattern-library-content{padding:16px 20px 22px}#pattern-dialog .dialog-heading{padding:20px}.pattern-sample{height:142px}}
+@media(max-width:540px){.pattern-gallery{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}#pattern-dialog .dialog-heading h2{font-size:21px}.pattern-sample{height:150px}.pattern-card-copy{padding:10px}.pattern-library-content h3{gap:4px;flex-direction:column;align-items:flex-start}.pattern-setting .browse-patterns{white-space:normal;font-size:12px;line-height:1.5}.setting-section.pattern-setting #preset-description{display:block;font-size:12px;min-height:0;margin:10px 0}.pattern-card-description{font-size:12px}}

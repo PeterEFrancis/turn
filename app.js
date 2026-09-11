@@ -1,10 +1,12 @@
+import { PATTERNS, getPattern, createPreset } from './patterns.js';
 import {COLORS,createDraft,weave,fabricSVG,escapeXML,mod,validateDraft,resizeDraft,chartSVG} from './model.js';
 const $=s=>document.querySelector(s);let draft=createDraft(),activeColor=COLORS[0].hex,showBack=false;
 function render(){
+if(!draft.colors.some(color=>color.hex===activeColor))activeColor=draft.colors[0].hex;
 $('#card-type').value=draft.holes;$('#card-count').value=draft.cards;$('#pick-count').value=draft.picks;$('#draft-name').value=draft.name;
 $('#thread-count').textContent=`${draft.cards*draft.holes} threads`;$('#preview-size').textContent=`${draft.cards} tablets · ${draft.picks} picks`;$('#draft-stats').textContent=`${draft.holes}-hole cards / ${draft.cards*draft.holes} warp threads`;
 $('#ruler-middle').textContent=Math.ceil(draft.picks/2);$('#ruler-end').textContent=draft.picks;
-$('#palette').innerHTML=draft.colors.map(c=>`<button class="swatch" style="--swatch:${c.hex};--check:${c.hex==='#f0e3c6'?'#615c4c':'#fff'}" aria-label="Select ${escapeXML(c.name)}" aria-pressed="${activeColor===c.hex}" data-color="${c.hex}" title="${escapeXML(c.name)}"></button>`).join('');
+$('#palette').innerHTML=draft.colors.map(c=>`<button class="swatch" style="--swatch:${c.hex};--check:${parseInt(c.hex.slice(1,3),16)*.299+parseInt(c.hex.slice(3,5),16)*.587+parseInt(c.hex.slice(5,7),16)*.114>160?'#414b3d':'#fff'}" aria-label="Select ${escapeXML(c.name)}" aria-pressed="${activeColor===c.hex}" data-color="${c.hex}" title="${escapeXML(c.name)}"></button>`).join('');
 const pts=Array.from({length:draft.holes},(_,h)=>{const a=-Math.PI/2+Math.PI/draft.holes+h*2*Math.PI/draft.holes;return [70+47*Math.cos(a),66+47*Math.sin(a)];});
 $('#card-illustration').innerHTML=`<svg viewBox="0 0 140 132" aria-label="${draft.holes}-hole tablet diagram"><polygon points="${pts.map(p=>p.join(',')).join(' ')}" fill="#f6eddf" stroke="#dacdbc" stroke-width="1.5" stroke-linejoin="round"/>${pts.map(([x,y],h)=>`<circle cx="${70+(x-70)*.68}" cy="${66+(y-66)*.68}" r="4.5" fill="${draft.threads[0][h]}" stroke="#d2bfa5" stroke-width="1"/><text x="${70+(x-70)*1.22}" y="${70+(y-66)*1.22}" text-anchor="middle" fill="#969083" font-size="10">${String.fromCharCode(65+h)}</text>`).join('')}<text x="70" y="70" text-anchor="middle" fill="#b5a996" font-size="16" font-family="serif">${draft.holes}</text></svg>`;
 $('#rotation-label').textContent=`${draft.holes===4?'¼':`1/${draft.holes}`} turn per pick`;$('.card-caption span:last-child').textContent=`A–${String.fromCharCode(64+draft.holes)}`;
@@ -26,8 +28,8 @@ $('#apply-preset').title='Replace threading and turns with this starting pattern
 }
 function notice(message){clearTimeout(toastTimer);$('#toast').textContent=message;$('#toast').classList.add('show');toastTimer=setTimeout(()=>$('#toast').classList.remove('show'),3800);}
 function change(action,message){checkpoint();action();render();if(message)notice(message);}
-function undo(){if(!history.length)return;future.push(snapshot());draft=JSON.parse(history.pop());dirty=true;render();}
-function redo(){if(!future.length)return;history.push(snapshot());draft=JSON.parse(future.pop());dirty=true;render();}
+function undo(){if(!history.length)return;future.push(snapshot());draft=JSON.parse(history.pop());dirty=true;render();syncRepeatInputs();}
+function redo(){if(!future.length)return;history.push(snapshot());draft=JSON.parse(future.pop());dirty=true;render();syncRepeatInputs();}
 function resize(values){try{const next=resizeDraft(draft,values);if(JSON.stringify(next)===snapshot())return;change(()=>draft=next,values.holes?'Card type updated. Existing hole colors are kept; extra holes start natural.':undefined);}catch(e){notice(e.message);render();}}
 function setColor(hex){activeColor=hex;render();}
 function paint(cell){const c=Number(cell.dataset.card),h=Number(cell.dataset.hole);if(draft.threads[c][h]===activeColor)return;if(!paintCheckpoint){checkpoint();paintCheckpoint=true;}draft.threads[c][h]=activeColor;if(c===0)$('#card-illustration').querySelectorAll('circle')[h].setAttribute('fill',activeColor);cell.style.setProperty('--thread',activeColor);cell.setAttribute('aria-label',`Tablet ${c+1}, hole ${String.fromCharCode(65+h)}, ${activeColor}`);$('#woven-preview').innerHTML=fabricSVG(draft);updateStateLabels();}
@@ -44,7 +46,49 @@ $('#all-forward').addEventListener('click',()=>{applyRepeat(draft.holes,0);$('#f
 for(const [selector,key] of [['#card-count','cards'],['#pick-count','picks']])$(selector).addEventListener('input',e=>{if(e.target.value!==''&&e.target.validity.valid)resize({[key]:Number(e.target.value)});});
 $('#card-type').addEventListener('change',e=>resize({holes:Number(e.target.value)}));$('#card-count').addEventListener('change',e=>resize({cards:Number(e.target.value)}));$('#pick-count').addEventListener('change',e=>resize({picks:Number(e.target.value)}));
 document.querySelectorAll('[data-step]').forEach(b=>b.addEventListener('click',()=>{const [key,step]=b.dataset.step.split(':');resize({[key]:Math.max(key==='cards'?2:4,Math.min(key==='cards'?48:160,draft[key]+Number(step)))});}));
-$('#apply-preset').addEventListener('click',()=>{const preset=$('#preset').value;change(()=>{draft=createDraft(draft.holes,draft.cards,draft.picks,preset);activeColor=COLORS[0].hex;},'Starting pattern applied. Undo restores your previous draft.');$('#forward-count').value=draft.holes;$('#backward-count').value=['diamond','blank'].includes(preset)?draft.holes:0;});
+function previewSelectedPattern(){
+ const pattern=getPattern($('#preset').value);
+ $('#preset-description').textContent=pattern.group==='basic'
+  ? `${pattern.description} Uses your current dimensions.`
+  : `${pattern.description} Loads ${pattern.holes}-hole cards, ${pattern.cards} tablets and ${pattern.picks} picks.`;
+}
+function syncRepeatInputs(){
+ const uniform=draft.turns.every(row=>row.every(dir=>dir===row[0]));
+ if(!uniform){$('#forward-count').value='';$('#backward-count').value='';return;}
+ const rows=draft.turns.map(row=>row[0]);
+ if(rows.every(dir=>dir==='F')){$('#forward-count').value=draft.holes;$('#backward-count').value=0;return;}
+ let f=0,b=0;while(rows[f]==='F')f++;while(rows[f+b]==='B')b++;
+ $('#forward-count').value=Math.min(f,32);$('#backward-count').value=Math.min(b,32);
+}
+function loadPattern(id){
+ const next=createPreset(id,{holes:draft.holes,cards:draft.cards,picks:draft.picks});
+ change(()=>{draft=next;activeColor=draft.colors[0].hex;},`${getPattern(id).name} loaded. Undo restores your previous draft.`);
+ $('#preset').value=id;previewSelectedPattern();syncRepeatInputs();
+ return {name:draft.name,holes:draft.holes,cards:draft.cards,picks:draft.picks};
+}
+function renderPatternLibrary(){
+ for(const group of ['reference','basic']){
+  const target=group==='reference'?'#reference-patterns':'#basic-patterns';
+  $(target).innerHTML=PATTERNS.filter(pattern=>pattern.group===group).map(pattern=>{
+   const sample=createPreset(pattern.id,{holes:draft.holes,cards:draft.cards,picks:draft.picks});
+   const meta=group==='basic'?'Your card type & dimensions':`${sample.cards} tablets · ${sample.picks} picks`;
+   return `<button class="pattern-card" data-pattern="${pattern.id}" aria-label="Load ${escapeXML(pattern.name)}"><span class="pattern-sample">${fabricSVG(sample)}<span class="sample-label">${pattern.kind||'BASIC'}</span></span><span class="pattern-card-copy"><span class="pattern-card-name">${escapeXML(pattern.name)}</span><span class="pattern-card-info">${meta}</span><span class="pattern-card-description">${escapeXML(pattern.description)}</span><span class="pattern-card-action">Use this pattern →</span></span></button>`;
+  }).join('');
+ }
+}
+const referenceOptions=document.createElement('optgroup');referenceOptions.label='Vines, braids & geometric bands';
+for(const pattern of PATTERNS.filter(pattern=>pattern.group==='reference'))referenceOptions.append(new Option(pattern.name,pattern.id));
+$('#preset').append(referenceOptions);
+$('#preset').addEventListener('change',previewSelectedPattern);
+$('#apply-preset').addEventListener('click',()=>loadPattern($('#preset').value));
+$('#browse-patterns').addEventListener('click',()=>{renderPatternLibrary();$('#pattern-dialog').showModal();});
+$('#close-pattern-library').addEventListener('click',()=>$('#pattern-dialog').close());
+$('#pattern-dialog').addEventListener('click',event=>{
+ const card=event.target.closest('[data-pattern]');
+ if(card){loadPattern(card.dataset.pattern);$('#pattern-dialog').close();return;}
+ if(event.target===$('#pattern-dialog')){const rect=event.target.getBoundingClientRect();if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)event.target.close();}
+});
+previewSelectedPattern();
 let editingName=false;
 $('#draft-name').addEventListener('focus',()=>editingName=false);
 $('#draft-name').addEventListener('input',e=>{if(!editingName){checkpoint();editingName=true;}draft.name=e.target.value||'Untitled pattern';updateStateLabels();});
@@ -54,13 +98,15 @@ document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLower
 $('#help-button').addEventListener('click',()=>$('#help-dialog').showModal());$('[data-close]').addEventListener('click',()=>$('#help-dialog').close());$('#help-dialog').addEventListener('click',e=>{if(e.target===$('#help-dialog')){const r=e.target.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)e.target.close();}});
 function download(content,type,extension){const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=(draft.name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'weaving-draft')+extension;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);}
 $('#save-button').addEventListener('click',()=>{download(JSON.stringify(draft,null,2),'application/json','.json');dirty=false;updateStateLabels();$('#status-message').textContent='Draft downloaded · Open the file here to keep editing.';notice('Editable draft downloaded.');});
-$('#open-button').addEventListener('click',()=>$('#file-input').click());$('#file-input').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>2_000_000)throw new Error('Choose a draft file smaller than 2 MB.');const next=validateDraft(JSON.parse(await file.text()));change(()=>{draft=next;activeColor=draft.colors[0].hex;},'Draft opened. Your previous draft is available with Undo.');}catch(error){notice(error instanceof SyntaxError?'This file is not valid JSON. Open a draft saved from Turn.':error.message);}finally{e.target.value='';}});
+$('#open-button').addEventListener('click',()=>$('#file-input').click());$('#file-input').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>2_000_000)throw new Error('Choose a draft file smaller than 2 MB.');const next=validateDraft(JSON.parse(await file.text()));change(()=>{draft=next;activeColor=draft.colors[0].hex;},'Draft opened. Your previous draft is available with Undo.');syncRepeatInputs();}catch(error){notice(error instanceof SyntaxError?'This file is not valid JSON. Open a draft saved from Turn.':error.message);}finally{e.target.value='';}});
 $('#export-svg').addEventListener('click',()=>{download(chartSVG(draft),'image/svg+xml','.svg');notice('Threading chart, turning plan, and woven preview exported.');});
 function preparePrint(){let sheet=$('#print-sheet');if(!sheet){sheet=document.createElement('section');sheet.id='print-sheet';document.body.append(sheet);}sheet.innerHTML=Array.from({length:Math.ceil(draft.picks/28)},(_,i)=>`<div class="${i?'print-page':''}">${chartSVG(draft,{start:i*28,end:Math.min((i+1)*28,draft.picks),includeThreading:i===0,includePreview:i===0})}</div>`).join('');}
 $('#print-button').addEventListener('click',()=>{preparePrint();window.print();});window.addEventListener('beforeprint',preparePrint);window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
 render();
 const context=document.modelContext;
 if(context?.registerTool){const lifecycle=new AbortController();window.addEventListener('pagehide',()=>lifecycle.abort(),{once:true});const register=tool=>{try{Promise.resolve(context.registerTool(tool,{signal:lifecycle.signal})).catch(()=>{});}catch{}};
+register({name:'list_weaving_patterns',title:'List weaving patterns',description:'List the built-in weaving patterns and the dimensions they load.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true},execute(){return PATTERNS.map(pattern=>({...pattern,holes:pattern.holes||draft.holes,cards:pattern.cards||draft.cards,picks:pattern.picks||draft.picks}));}});
+register({name:'load_weaving_pattern',title:'Load weaving pattern',description:'Replace the draft with a built-in pattern, including its palette, threading and turns. Detailed bands load four-hole cards; basic patterns use current dimensions. Undo restores the previous draft.',inputSchema:{type:'object',properties:{id:{type:'string',enum:PATTERNS.map(pattern=>pattern.id)}},required:['id'],additionalProperties:false},annotations:{readOnlyHint:false},execute(input){if(!input||typeof input.id!=='string'||Object.keys(input).some(key=>key!=='id'))throw new Error('Provide a pattern id.');return loadPattern(input.id);}});
 register({name:'read_weaving_draft',title:'Read weaving draft',description:'Read the current tablet weaving draft, including hole colors, threading, and turns.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true,untrustedContentHint:true},execute(){return JSON.parse(snapshot());}});
 register({name:'configure_weaving_draft',title:'Configure weaving draft',description:'Resize the current draft while retaining existing colors and turns. Added holes use natural thread.',inputSchema:{type:'object',properties:{holes:{type:'integer',minimum:3,maximum:8},cards:{type:'integer',minimum:2,maximum:48},picks:{type:'integer',minimum:4,maximum:160}},additionalProperties:false},annotations:{readOnlyHint:false},execute(input){if(!input||typeof input!=='object'||Object.keys(input).some(k=>!['holes','cards','picks'].includes(k)))throw new Error('Provide holes, cards, or picks.');const next=resizeDraft(draft,input);change(()=>draft=next);return {holes:draft.holes,cards:draft.cards,picks:draft.picks};}});
 register({name:'apply_turning_repeat',title:'Apply turning repeat',description:'Replace all turning instructions with repeating forward then backward turns.',inputSchema:{type:'object',properties:{forward:{type:'integer',minimum:0,maximum:32},backward:{type:'integer',minimum:0,maximum:32}},required:['forward','backward'],additionalProperties:false},annotations:{readOnlyHint:false},execute(input){if(!input||Object.keys(input).some(k=>!['forward','backward'].includes(k)))throw new Error('Provide forward and backward turn counts.');applyRepeat(input.forward,input.backward);$('#forward-count').value=input.forward;$('#backward-count').value=input.backward;return {picks:draft.picks,forward:input.forward,backward:input.backward};}});

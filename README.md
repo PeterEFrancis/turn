@@ -8,6 +8,17 @@ Run `npm start` and open `http://localhost:5173`. Run the model regression check
 
 Live at [peterefrancis.com/turn](https://peterefrancis.com/turn/). GitHub Pages serves the root of the `main` branch in [PeterEFrancis/turn](https://github.com/PeterEFrancis/turn). Push changes to `main` to update the website. The custom domain is inherited from the main personal website; this project does not need a CNAME file.
 
+## Pattern library
+
+Choose **Browse pattern library** or the **Starting pattern** menu. Seven detailed four-hole bands are included alongside the original starters:
+
+- Rose vine, Ivory braid, and Golden ram’s horns are original photo-inspired adaptations. They use AABB threading and two quarter-turns per design row for a double-faced weave.
+- Ember lattice (28 tablets, 46 picks), Blue scroll (18, 20), Scarlet diamonds (24, 32), and Turquoise braid (16, 32) follow the supplied charts’ A–D threading, S/Z directions, and chronological turning plans. JPEG colors are approximations. The source diagrams read upward; Turn keeps pick 1 at the top.
+
+Detailed presets load their own palette and dimensions. The four everyday starters retain the current 3–8-hole setup. Loading is undoable and every preset is a normal draft compatible with editing, JSON save/open, SVG export, and printing. Gallery thumbnails are rendered from the same threading and turns as the editor; no reference photos are hosted.
+
+Pattern definitions and construction live in `patterns.js`. The 46 picks in Ember lattice are the complete supplied plan, not a claim that the color sequence repeats after 46 picks.
+
 ## Draft convention
 
 Read the labelled card face from the right. Holes are clockwise from A, with A upper-far and the final hole upper-near. A forward step turns the top away by 360°/hole count. A four-hole forward cycle shows D, C, B, A. Reversal repeats the preceding surface thread. S/Z affects stitch slant independently of hole lookup. Pick 1 is at the top of both charts and preview.
@@ -16,4 +27,4 @@ The preview is schematic. It does not model yarn tension, unequal face coverage 
 
 Conventions follow [Tablet Weaving Draft Designer](https://www.tabletweavingintheoryandpractice.co.uk/2021/02/getting-most-from-tablet-weaving-draft.html) and [Stringpage's threading explanation](https://www.stringpage.com/tw/threading.html).
 
-Drafts stay in memory until downloaded using Save draft. JSON files can be reopened. There are no accounts or application data uploads. The app also exposes feature-detected WebMCP tools for reading a draft, changing dimensions, and applying turning repeats.
+Drafts stay in memory until downloaded using Save draft. JSON files can be reopened. There are no accounts or application data uploads. The app also exposes feature-detected WebMCP tools for reading a draft, changing dimensions, applying turning repeats, listing patterns, and loading a preset.
