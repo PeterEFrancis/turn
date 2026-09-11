@@ -6,7 +6,8 @@ const threads=Array.from({length:cards},(_,c)=>Array.from({length:holes},(_,h)=>
 if(preset==='blank')return colors[2].hex;
 if(c<2||c>=cards-2)return colors[c%2===0?1:2].hex;
 if(preset==='stripe')return colors[Math.floor(c/2)%3].hex;
-const phase=Math.min(c-2,cards-3-c);
+// The two cards at the S/Z join need the same phase, including odd widths.
+const phase=Math.min(c-2,cards-3-c+cards%2);
 const v=mod(h+phase,holes);
 return v===0?colors[0].hex:v===1?colors[1].hex:colors[2].hex;
 }));

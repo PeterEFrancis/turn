@@ -1,5 +1,5 @@
-import { PATTERNS, getPattern, createPreset } from './patterns.js?v=5';
-import {COLORS,createDraft,weave,fabricSVG,escapeXML,mod,validateDraft,resizeDraft,chartSVG} from './model.js?v=4';
+import { PATTERNS, getPattern, createPreset } from './patterns.js?v=6';
+import {COLORS,createDraft,weave,fabricSVG,escapeXML,mod,validateDraft,resizeDraft,chartSVG} from './model.js?v=6';
 const $=s=>document.querySelector(s);let draft=createDraft(),activeColor=COLORS[0].hex,showBack=false;
 function render(){
 if(!draft.colors.some(color=>color.hex===activeColor))activeColor=draft.colors[0].hex;

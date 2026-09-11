@@ -1,6 +1,41 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createDraft,weave,resizeDraft,validateDraft,chartSVG} from '../model.js';
+import {createDraft,weave,resizeDraft,validateDraft,chartSVG,fabricSVG} from '../model.js';
+
+const stitches=draft=>[...fabricSVG(draft).matchAll(/<polygon points="([^"]+)" fill="([^"]+)"/g)].map(match=>({
+ points:match[1].split(' ').map(point=>point.split(',').map(Number)),color:match[2]
+}));
+
+test('Chevron and diamond colors meet on the same edge at odd and even S/Z joins',()=>{
+ for(let holes=3;holes<=8;holes++)for(let cards=6;cards<=48;cards++)for(const preset of ['chevron','diamond']){
+  const draft=createDraft(holes,cards,holes*2,preset),cells=stitches(draft),left=Math.ceil(cards/2)-1;
+  for(let pick=0;pick<draft.picks;pick++){
+   const a=cells[pick*cards+left],b=cells[pick*cards+left+1];
+   const label=`${preset}, ${holes} holes, ${cards} tablets, pick ${pick+1}`;
+   assert.equal(a.color,b.color,label);
+   assert.deepEqual(a.points[1],b.points[0],label);
+   assert.deepEqual(a.points[2],b.points[3],label);
+  }
+ }
+});
+
+test('Classic chevron diagonals stay connected across neighboring tablets',()=>{
+ for(let holes=3;holes<=8;holes++)for(const cards of [7,19,20,21,47,48]){
+  const draft=createDraft(holes,cards,holes*3),cells=stitches(draft),dy=12*.92;
+  const colorAt=(column,side,y)=>{
+   for(let row=0;row<draft.picks;row++){
+    const cell=cells[row*cards+column],ends=side==='right'?[1,2]:[0,3];
+    const [a,b]=ends.map(index=>cell.points[index][1]);
+    if(y>=Math.min(a,b)&&y<Math.max(a,b))return cell.color;
+   }
+   assert.fail('No stitch covers the sampled edge');
+  };
+  for(let c=2;c<cards-3;c++)for(let r=1;r<draft.picks-1;r++)for(const offset of [.25,.75]){
+   const y=(r+offset)*dy;
+   assert.equal(colorAt(c,'right',y),colorAt(c+1,'left',y),`${holes} holes, ${cards} tablets, edge ${c+1}, pick ${r+1}`);
+  }
+ }
+});
 for(let n=3;n<=8;n++){
  test(`${n}-hole full revolutions and reversals follow the stated card convention`,()=>{
   let d=createDraft(n,2,n*2);d.turns=Array.from({length:n*2},(_,r)=>Array(2).fill(r<n?'F':'B'));

@@ -1,4 +1,4 @@
-import { createDraft } from './model.js';
+import { createDraft } from './model.js?v=6';
 
 // Holes A–D in each string; chronological F/B picks. Short plans repeat to
 // fill the preset. Dragon drafts are four-thread adaptations of the photographed
