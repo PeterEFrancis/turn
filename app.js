@@ -1,5 +1,5 @@
-import { PATTERNS, getPattern, createPreset } from './patterns.js?v=9';
-import {COLORS,createDraft,weave,wovenPickCount,threadCount,fabricSVG,escapeXML,mod,validateDraft,resizeDraft,chartSVG} from './model.js?v=9';
+import { PATTERNS, getPattern, createPreset } from './patterns.js?v=10';
+import {COLORS,createDraft,weave,wovenPickCount,threadCount,fabricSVG,escapeXML,mod,validateDraft,resizeDraft,chartSVG} from './model.js?v=10';
 const $=s=>document.querySelector(s);let draft=createDraft(),activeColor=COLORS[0].hex,showBack=false;
 function render(){
 const wovenRows=wovenPickCount(draft),hasUnwefted=!!draft.weft?.includes(false);
@@ -8,7 +8,7 @@ $('#draft-notes').hidden=!draft.source&&!draft.notes?.length;
 $('#draft-source').textContent=draft.source||'Pattern notes';
 $('#source-checks').innerHTML=(draft.notes||[]).filter(note=>note.startsWith('Source check:')).map(note=>`<p>${escapeXML(note)}</p>`).join('');
 $('#draft-instructions').innerHTML=(draft.notes||[]).filter(note=>!note.startsWith('Source check:')).map(note=>`<li>${escapeXML(note)}</li>`).join('');
-const previewNote=hasUnwefted?'Preview shows woven sections only. Braided gaps and their length are not simulated.':(draft.notes||[]).find(note=>note.startsWith('This is a flat threading preview.'))||'';
+const previewNote=hasUnwefted?'Preview shows woven sections only. Braided gaps and their length are not simulated.':(draft.notes||[]).find(note=>note.startsWith('This is a flat threading preview.')||note.startsWith('Preview '))||'';
 $('#preview-note').textContent=previewNote;$('#preview-note').hidden=!previewNote;
 
 if(activeColor!==null&&!draft.colors.some(color=>color.hex===activeColor))activeColor=draft.colors[0].hex;
@@ -65,12 +65,17 @@ function previewSelectedPattern(){
   : `${pattern.description} Loads ${pattern.holes}-hole cards, ${pattern.cards} tablets and ${pattern.picks} ${pattern.weftPicks===undefined?'picks':'turn rows'}.`;
 }
 function syncRepeatInputs(){
+ $('#forward-count').value='';$('#backward-count').value='';
  const uniform=draft.turns.every(row=>row.every(dir=>dir===row[0]));
- if(!uniform){$('#forward-count').value='';$('#backward-count').value='';return;}
+ if(!uniform)return;
  const rows=draft.turns.map(row=>row[0]);
  if(rows.every(dir=>dir==='F')){$('#forward-count').value=draft.holes;$('#backward-count').value=0;return;}
+ if(rows.every(dir=>dir==='B')){$('#forward-count').value=0;$('#backward-count').value=draft.holes;return;}
+ // These controls apply F then B. Leave them blank for a B-first or custom
+ // plan instead of suggesting an all-backward repeat for a book draft.
  let f=0,b=0;while(rows[f]==='F')f++;while(rows[f+b]==='B')b++;
- $('#forward-count').value=Math.min(f,32);$('#backward-count').value=Math.min(b,32);
+ if(!f||!b||f>32||b>32||!rows.every((dir,r)=>dir===(r%(f+b)<f?'F':'B')))return;
+ $('#forward-count').value=f;$('#backward-count').value=b;
 }
 function loadPattern(id){
  const next=createPreset(id,{holes:draft.holes,cards:draft.cards,picks:draft.picks});
@@ -79,27 +84,27 @@ function loadPattern(id){
  return {name:draft.name,holes:draft.holes,cards:draft.cards,picks:draft.picks};
 }
 function renderPatternLibrary(){
- for(const group of ['groff','reference','basic']){
+ for(const group of ['crockett','groff','reference','basic']){
   const target=`#${group}-patterns`;
   $(target).innerHTML=PATTERNS.filter(pattern=>pattern.group===group).map(pattern=>{
    const sample=createPreset(pattern.id,{holes:draft.holes,cards:draft.cards,picks:draft.picks});
-   const meta=group==='basic'?'Your card type & dimensions':`${sample.cards} tablets · ${sample.picks} ${sample.weft?'turns':'picks'}`;
+   const meta=group==='basic'?'Your card type & dimensions':`${sample.holes}-hole · ${sample.cards} tablets · ${sample.picks} ${sample.weft?'turns':'picks'}`;
    return `<button class="pattern-card" data-pattern="${pattern.id}" aria-label="Load ${escapeXML(pattern.name)}"><span class="pattern-sample">${fabricSVG(sample)}<span class="sample-label">${pattern.kind||'BASIC'}</span></span><span class="pattern-card-copy"><span class="pattern-card-name">${escapeXML(pattern.name)}</span><span class="pattern-card-info">${meta}${pattern.needsReview?' · <b class="source-badge">Source check</b>':''}</span><span class="pattern-card-description">${escapeXML(pattern.description)}</span><span class="pattern-card-action">Use this pattern →</span></span></button>`;
   }).join('');
  }
 }
-for(const [group,label] of [['reference','Vines, braids & geometric bands'],['groff','Groff · All 53 book patterns']]){
+for(const [group,label] of [['crockett','Crockett · 20 patterns & 10 teaching drafts'],['reference','Vines, braids & geometric bands'],['groff','Groff · All 53 book patterns']]){
  const options=document.createElement('optgroup');options.label=label;
  for(const pattern of PATTERNS.filter(pattern=>pattern.group===group))options.append(new Option(pattern.name,pattern.id));
  $('#preset').append(options);
 }
 function filterPatternLibrary(){
- const query=$('#pattern-search').value.trim().toLowerCase(),numberQuery=query.match(/^(?:groff\s*|#)0?(\d{1,2})$/);let count=0;
+ const query=$('#pattern-search').value.trim().toLowerCase(),numberQuery=query.match(/^(?:(groff|crockett)\s*|#)0?(\d{1,2})$/);let count=0;
  for(const card of document.querySelectorAll('[data-pattern]')){
   const pattern=getPattern(card.dataset.pattern);
-  const number=pattern.group==='groff'?String(Number(pattern.id.slice(6))):'';
-  const text=`${pattern.name} ${pattern.description} ${pattern.cards||''} tablets ${number}`.toLowerCase();
-  card.hidden=numberQuery ? pattern.id!==`groff-${numberQuery[1].padStart(2,'0')}` : !!query&&!query.split(/\s+/).every(word=>text.includes(word));
+  const number=pattern.number|| (pattern.group==='groff'?Number(pattern.id.slice(6)):'');
+  const text=`${pattern.name} ${pattern.description} ${pattern.cards||''} tablets ${pattern.holes||''}-hole ${pattern.kind||''} ${number}`.toLowerCase();
+  card.hidden=numberQuery ? !number||Number(number)!==Number(numberQuery[2])||(!!numberQuery[1]&&pattern.group!==numberQuery[1]) : !!query&&!query.split(/\s+/).every(word=>text.includes(word));
   if(!card.hidden)count++;
  }
  for(const section of document.querySelectorAll('[data-pattern-group]'))section.hidden=![...section.querySelectorAll('[data-pattern]')].some(card=>!card.hidden);
@@ -133,7 +138,7 @@ render();
 const context=document.modelContext;
 if(context?.registerTool){const lifecycle=new AbortController();window.addEventListener('pagehide',()=>lifecycle.abort(),{once:true});const register=tool=>{try{Promise.resolve(context.registerTool(tool,{signal:lifecycle.signal})).catch(()=>{});}catch{}};
 register({name:'list_weaving_patterns',title:'List weaving patterns',description:'List the built-in weaving patterns and the dimensions they load.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true},execute(){return PATTERNS.map(pattern=>({...pattern,holes:pattern.holes||draft.holes,cards:pattern.cards||draft.cards,picks:pattern.picks||draft.picks}));}});
-register({name:'load_weaving_pattern',title:'Load weaving pattern',description:'Replace the draft with a built-in pattern, including its palette, threading and turns. Detailed bands load four-hole cards; basic patterns use current dimensions. Undo restores the previous draft.',inputSchema:{type:'object',properties:{id:{type:'string',enum:PATTERNS.map(pattern=>pattern.id)}},required:['id'],additionalProperties:false},annotations:{readOnlyHint:false},execute(input){if(!input||typeof input.id!=='string'||Object.keys(input).some(key=>key!=='id'))throw new Error('Provide a pattern id.');return loadPattern(input.id);}});
+register({name:'load_weaving_pattern',title:'Load weaving pattern',description:'Replace the draft with a built-in pattern, including its palette, threading and turns. Book and reference drafts load their own card type and dimensions; basic patterns use current dimensions. Undo restores the previous draft.',inputSchema:{type:'object',properties:{id:{type:'string',enum:PATTERNS.map(pattern=>pattern.id)}},required:['id'],additionalProperties:false},annotations:{readOnlyHint:false},execute(input){if(!input||typeof input.id!=='string'||Object.keys(input).some(key=>key!=='id'))throw new Error('Provide a pattern id.');return loadPattern(input.id);}});
 register({name:'read_weaving_draft',title:'Read weaving draft',description:'Read the current tablet weaving draft, including hole colors, threading, and turns.',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true,untrustedContentHint:true},execute(){return JSON.parse(snapshot());}});
 register({name:'configure_weaving_draft',title:'Configure weaving draft',description:'Resize the current draft while retaining existing colors and turns. Added holes use natural thread.',inputSchema:{type:'object',properties:{holes:{type:'integer',minimum:3,maximum:8},cards:{type:'integer',minimum:2,maximum:64},picks:{type:'integer',minimum:4,maximum:160}},additionalProperties:false},annotations:{readOnlyHint:false},execute(input){if(!input||typeof input!=='object'||Object.keys(input).some(k=>!['holes','cards','picks'].includes(k)))throw new Error('Provide holes, cards, or picks.');const next=resizeDraft(draft,input);change(()=>draft=next);return {holes:draft.holes,cards:draft.cards,picks:draft.picks};}});
 register({name:'apply_turning_repeat',title:'Apply turning repeat',description:'Replace all turning instructions with repeating forward then backward turns.',inputSchema:{type:'object',properties:{forward:{type:'integer',minimum:0,maximum:32},backward:{type:'integer',minimum:0,maximum:32}},required:['forward','backward'],additionalProperties:false},annotations:{readOnlyHint:false},execute(input){if(!input||Object.keys(input).some(k=>!['forward','backward'].includes(k)))throw new Error('Provide forward and backward turn counts.');applyRepeat(input.forward,input.backward);$('#forward-count').value=input.forward;$('#backward-count').value=input.backward;return {picks:draft.picks,forward:input.forward,backward:input.backward};}});

@@ -1,5 +1,6 @@
-import { GROFF_PATTERNS } from './groff-patterns.js?v=9';
-import { createDraft } from './model.js?v=9';
+import { GROFF_PATTERNS } from './groff-patterns.js?v=10';
+import { CROCKETT_PATTERNS } from './crockett-patterns.js?v=10';
+import { createDraft } from './model.js?v=10';
 
 // Holes A–D in each string; chronological F/B picks. Short plans repeat to
 // fill the preset. Rose is a four-thread adaptation of the photographed motif.
@@ -175,6 +176,16 @@ const CHART_DRAFTS = {
 };
 
 export const PATTERNS = [
+  ...CROCKETT_PATTERNS.map(source => ({
+    id: source.id,
+    name: `Crockett ${source.number ? `${String(source.number).padStart(2, '0')} · ` : '· '}${source.title}`,
+    group: 'crockett', number: source.number,
+    kind: source.number ? `CROCKETT ${String(source.number).padStart(2, '0')}` : `FIGURE ${source.figure}`,
+    holes: source.holes, cards: source.cards, picks: sourcePickCount(source),
+    technique: turningSummary(source.repeat),
+    description: source.previewNote || `${turningSummary(source.repeat)}. ${source.number === 20 ? '44 threads; leave 28 holes empty.' : `Book figure ${source.figure}.`}`,
+    needsReview: source.uncertainties.length > 0,
+  })),
   { id: 'rose-vine', name: 'Rose vine', group: 'reference', kind: '4-thread version', technique: 'Dublin dragons', holes: 4, cards: 16, picks: 48, description: 'Alternating rose dragon curls and small side accents on navy.' },
   { id: 'ember-lattice', name: 'Ember lattice', group: 'reference', kind: 'Chart draft', technique: 'Individual turns', holes: 4, cards: 28, picks: 46, description: 'Red and gold ribbons weave through black diamonds.' },
   { id: 'blue-scroll', name: 'Blue scroll', group: 'reference', kind: 'Chart draft', technique: 'Individual turns', holes: 4, cards: 18, picks: 20, description: 'Linked black scrolls divide ivory and blue.' },
@@ -222,6 +233,7 @@ function chartDraft(pattern) {
 export function createPreset(id, { holes = 4, cards = 20, picks = 32 } = {}) {
   const pattern = getPattern(id);
   if (pattern.group === 'basic') return createDraft(holes, cards, picks, id);
+  if (pattern.group === 'crockett') return crockettDraft(CROCKETT_PATTERNS.find(source => source.id === id), pattern);
   if (pattern.group === 'groff') return groffDraft(GROFF_PATTERNS.find(source => `groff-${String(source.number).padStart(2, '0')}` === id), pattern);
   return chartDraft(pattern);
 }
@@ -231,12 +243,44 @@ function groffPickCount(source) {
 }
 function turningSummary(repeat) {
   if ([...repeat].every(turn => turn === 'F')) return 'Continuous forward';
+  if ([...repeat].every(turn => turn === 'B')) return 'Continuous backward';
   const runs = [];
   for (const turn of repeat) {
     if (runs.at(-1)?.turn === turn) runs.at(-1).count++;
     else runs.push({ turn, count: 1 });
   }
   return runs.map(({turn, count}) => `${count}${turn}`).join(' / ');
+}
+function sourcePickCount(source) {
+  return source.planKind === 'passage' ? source.repeat.length : source.repeat.length * Math.max(1, Math.ceil(32 / source.repeat.length));
+}
+function crockettDraft(source, pattern) {
+  const palette = Object.fromEntries(Object.entries(source.palette).map(([symbol, color]) => [symbol, {
+    name: color.name, hex: (color.hex ?? color.displayHex).toLowerCase(),
+  }]));
+  // Reflect Crockett's left-facing labelled card into Turn's right-facing one.
+  // This yields source D/C/B/A for toward turns, as illustrated in Figure 72.
+  const rows = [0, ...Array.from({length: source.holes - 1}, (_,index) => source.holes - 1 - index)];
+  const startHole = rows.indexOf(source.sourceStartUpperNear.charCodeAt(0) - 65);
+  const sourceLabels = rows.map(row => String.fromCharCode(65 + row)).join('/');
+  const turnLabels = rows.map((_,hole) => String.fromCharCode(65 + hole)).join('/');
+  return {
+    version: 1, name: pattern.name.slice(0, 80), holes: source.holes, cards: source.cards, picks: pattern.picks,
+    colors: [...new Map(Object.values(palette).map(color => [color.hex, {...color}])).values()],
+    startHole,
+    threads: Array.from({length: source.cards}, (_,card) => rows.map(row => source.rows[row][card] === '.' ? null : palette[source.rows[row][card]].hex)),
+    slants: [...source.arrows].map(arrow => arrow === 'L' ? 'S' : 'Z'),
+    turns: Array.from({length: pattern.picks}, (_,pick) => Array(source.cards).fill(source.repeat[pick % source.repeat.length])),
+    source: `Candace Crockett, Card Weaving (1973) · ${source.number ? `Pattern ${source.number} · ` : ''}Figure ${source.figure} · printed p. ${source.printedPage} (PDF p. ${source.pdfPage})`,
+    notes: [
+      `Source draft: ${source.title}.`,
+      `Turn one hole (${360 / source.holes}°) per step. B = toward you; F = away. ${turningSummary(source.repeat)}${source.planKind === 'passage' ? '; this is the first passage, with stages below.' : '; repeat this turning sequence.'}`,
+      `Converted hole labels: Turn ${turnLabels} = book ${sourceLabels}; book left/right arrows = S/Z. Start with Turn ${String.fromCharCode(65 + startHole)} upper-near. Colors approximate the named yarns; unspecified hues are identified in the notes.`,
+      ...(source.previewNote ? [source.previewNote] : []),
+      ...source.notes,
+      ...source.uncertainties.map(note => `Source check: ${note}`),
+    ],
+  };
 }
 function groffDraft(source, pattern) {
   const symbols = source.rows.map(row => [...row]);

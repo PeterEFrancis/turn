@@ -17,7 +17,7 @@ Choose **Browse pattern library** or the **Starting pattern** menu. Five detaile
 
 Detailed presets load their own palette and dimensions. The four everyday starters retain the current 3–8-hole setup. Loading is undoable and every preset is a normal draft compatible with editing, JSON save/open, SVG export, and printing. Gallery thumbnails are rendered from the same threading and turns as the editor; no reference photos are hosted.
 
-Pattern definitions and construction live in `patterns.js`; the literal Groff transcription lives in `groff-patterns.js`. The 46 picks in Ember lattice are the complete supplied plan, not a claim that the color sequence repeats after 46 picks.
+Pattern definitions and construction live in `patterns.js`; literal book transcriptions live in `groff-patterns.js` and `crockett-patterns.js`. The library has 92 entries. Search by author and number (for example, `Crockett 14` or `Groff 27`); `#14` finds that number in both books. The 46 picks in Ember lattice are the complete supplied plan, not a claim that the color sequence repeats after 46 picks.
 
 ## Draft convention
 
@@ -53,3 +53,22 @@ Source checks remain visible in the loaded draft and in saved/exported instructi
 Pattern 14 has 72 turn rows, including two 12-turn sections without weft. The turning chart includes editable weft checkboxes and marks these rows with an asterisk. All turns advance tablet positions, but the preview shows only woven sections: the braided gaps and their length are not simulated. Pattern 50 includes the separate weaving, crossing, and rejoining instructions for three 13-tablet groups; its preview shows their initial flat threading, not the crossed assembly. Pattern 47’s red sequins are a finishing step described in its notes.
 
 Optional version-1 JSON fields `source` (text), `notes` (text array), and `weft` (one boolean per turn row) preserve these instructions through editing, undo/redo, resizing, and save/open. Omitted `weft` means insert weft on every row. SVG and print exports include the instructions and no-weft markers. The tablet limit is 64 to accommodate pattern 27’s 56 tablets.
+
+## Candace Crockett collection
+
+All 20 numbered Pattern Drafts from the supplied 1973 edition of Candace Crockett’s *Card Weaving* (Watson-Guptill) are included, plus 10 complete teaching drafts: Sample A (Figure 41), the five Figure 69 studies, Five-Color Diamonds (81), Sample B (83), the angle study (87), and the double-weave sampler setup (135). Descriptive library titles identify designs that the book only numbers. Designer credits, source figures, printed/PDF pages, and paraphrased instructions accompany each draft. The PDF and its images are not published.
+
+`crockett-patterns.js` preserves literal A–D or A–F rows and L/R arrows. Only `.` means an empty hole; a dash is a yarn symbol. Card order is left to right, including the two halves of draft 15’s split chart. Patterns 14 and 15 use six holes with 60° steps; pattern 18 has 63 tablets; pattern 20 has 44 threads and 28 empty holes.
+
+The labelled card face in Crockett faces left. Turn reflects its hole order: Turn A/B/C/D = source A/D/C/B, or A/B/C/D/E/F = source A/F/E/D/C/B. Left arrows map to S and right arrows to Z, independently checked against Figure 72. The usual A upper-near start makes four toward turns expose source D/C/B/A, then four away expose A/B/C/D, including the duplicated reversal thread. Sample B and Figure 87 start with source B upper-near (Turn D, `startHole: 3`), following the AB-top setup; Figure 87’s inferred phase is disclosed. No change to the weaving model was needed. Regression checks cover the common edges of the smooth and broken Figure 69 studies.
+
+Named yarn colors are approximated. Teaching drafts specify only values or symbols, so their notes identify the editable display hues as choices. Source checks preserve these discrepancies:
+
+- 2: the overprinted C16 cell reads as a dash; its count conflicts with the key by one.
+- 10: O appears 14 times but is omitted from the color key. The literal palette retains `hex: null` with an explicit cream `displayHex`; the imported draft has 96 actual threads, not 14 empty holes.
+- 13: C16 is visibly X although the totals imply Z. Continuous turning starts toward the body as an explicit choice.
+- 15: the printed X/O counts are reversed relative to the chart; its printed pink symbol resembles 2 rather than Z.
+- 20: the general four-toward/four-away cycle is used because no separate turn plan is given.
+- Sample B: step 7 repeats “away” while claiming to untwist the warp; the contradiction is flagged.
+
+Pattern 17 stores the initial 64-turn passage (24 toward, 40 away) and the staged instructions for four separate wefts, group crossings, and rejoining. It is not a cyclic braid simulation. Sample B loads only its ordinary ground and includes all ten manual stages. Figure 135 loads its ground and explains the two-shed double-weave procedure, which the one-shed preview cannot simulate. These limitations appear in gallery descriptions, beside the preview, and in saved/exported notes. Photographs without complete drafts and turning instructions are not invented as extra presets.

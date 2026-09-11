@@ -21,7 +21,7 @@ test('The library contains Groff 1–53 exactly once and keeps the five retained
   assert.deepEqual(PATTERNS.filter(pattern => pattern.group === 'basic').map(pattern => pattern.id), [
     'chevron', 'diamond', 'stripe', 'blank',
   ]);
-  assert.equal(PATTERNS.length, 5 + 53 + 4, 'Removed Ivory and Golden bands must not return with this collection');
+  for (const id of ['ivory-braid', 'golden-rams-horns']) assert.ok(!PATTERNS.some(pattern => pattern.id === id), 'Removed reference bands must not return');
   for (const id of ['groff-00', 'groff-54', 'groff-1', 'not-a-pattern']) {
     assert.throws(() => getPattern(id), /Choose a pattern from the library/);
     assert.throws(() => createPreset(id), /Choose a pattern from the library/);
