@@ -26,15 +26,21 @@ export const escapeXML=s=>String(s).replace(/[<>&"']/g,c=>({'<':'&lt;','>':'&gt;
 export function fabricSVG(draft,back=false,scale=12){
  const data=weave(draft,back),dy=scale*.92,w=draft.cards*scale,h=draft.picks*dy;
  const point=(x,y)=>`${Number(x.toFixed(3))},${Number(y.toFixed(3))}`;
- let content='';
+ // Adjacent picks share this exact edge, including when a tablet reverses.
+ const edge=(r,c)=>{
+  // Mirror the chart slant because this preview places pick 1 at the top.
+  const y=r*dy,offset=r===0||r===draft.picks?0:-data[r-1][c].slant*dy/2;
+  return [y-offset,y+offset];
+ };
+ let content='',outlines='';
  for(let r=0;r<draft.picks;r++)for(let c=0;c<draft.cards;c++){
-  const p=data[r][c],cx=(c+.5)*scale,cy=(r+.5)*dy;
-  // Perpendicular diagonals form a diamond; mirror its long axis with the yarn's slant.
-  const lx=p.slant*scale*.46,ly=dy*.46,sx=dy*.28,sy=-p.slant*scale*.28;
-  const points=[[cx-lx,cy-ly],[cx+sx,cy+sy],[cx+lx,cy+ly],[cx-sx,cy-sy]];
-  content+=`<polygon points="${points.map(([x,y])=>point(x,y)).join(' ')}" fill="${p.color}" stroke="#000" stroke-opacity=".15" stroke-width="${scale*.035}" stroke-linejoin="round"/><path d="M${point(cx-lx*.62,cy-ly*.62)} L${point(cx+lx*.62,cy+ly*.62)}" fill="none" stroke="#fff" stroke-opacity=".22" stroke-width="${scale*.085}" stroke-linecap="round"/>`;
+  const p=data[r][c],x=c*scale,[tl,tr]=edge(r,c),[bl,br]=edge(r+1,c);
+  const points=[[x,tl],[x+scale,tr],[x+scale,br],[x,bl]];
+  // A same-color stroke closes subpixel antialias seams without separating stitches.
+  content+=`<polygon points="${points.map(([px,py])=>point(px,py)).join(' ')}" fill="${p.color}" stroke="${p.color}" stroke-width="${scale*.04}" stroke-linejoin="round"/>`;
+  outlines+=`<path d="M${point(x,bl)} L${point(x+scale,br)} L${point(x+scale,tr)}"/>`;
  }
- return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" role="img" aria-label="Woven ${back?'back':'front'} preview for ${draft.cards} tablets and ${draft.picks} picks"><title>${escapeXML(draft.name)} — woven preview</title>${content}</svg>`;
+ return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" role="img" aria-label="Woven ${back?'back':'front'} preview for ${draft.cards} tablets and ${draft.picks} picks"><title>${escapeXML(draft.name)} — woven preview</title>${content}<g fill="none" stroke="#000" stroke-opacity=".16" stroke-width="${scale*.025}">${outlines}</g></svg>`;
 }
 
 export function resizeDraft(draft,{holes=draft.holes,cards=draft.cards,picks=draft.picks}){
