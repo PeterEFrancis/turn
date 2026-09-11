@@ -23,8 +23,19 @@ return {color:draft.threads[c][thread],slant:(draft.slants[c]==='S'?-1:1)*step*(
 }));
 }
 export const escapeXML=s=>String(s).replace(/[<>&"']/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&apos;'}[c]));
-export function fabricSVG(draft,back=false,scale=12){const data=weave(draft,back),w=draft.cards*scale,h=draft.picks*scale*.92;let content='';for(let r=0;r<draft.picks;r++)for(let c=0;c<draft.cards;c++){const p=data[r][c],x=c*scale,y=r*scale*.92,dy=scale*.92;const a=p.slant>0?x+scale*.22:x+scale*.78,b=p.slant>0?x+scale*.78:x+scale*.22;content+=`<rect x="${x}" y="${y}" width="${scale}" height="${dy+.5}" fill="${p.color}"/><path d="M${a} ${y+.7} L${b} ${y+dy-.7}" stroke="#fff" stroke-opacity=".23" stroke-width="${scale*.3}" stroke-linecap="round"/><path d="M${a+scale*.16} ${y+.7} L${b+scale*.16} ${y+dy-.7}" stroke="#000" stroke-opacity=".13" stroke-width="${scale*.09}" stroke-linecap="round"/>`;}
-return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" role="img" aria-label="Woven ${back?'back':'front'} preview for ${draft.cards} tablets and ${draft.picks} picks"><title>${escapeXML(draft.name)} — woven preview</title>${content}</svg>`;}
+export function fabricSVG(draft,back=false,scale=12){
+ const data=weave(draft,back),dy=scale*.92,w=draft.cards*scale,h=draft.picks*dy;
+ const point=(x,y)=>`${Number(x.toFixed(3))},${Number(y.toFixed(3))}`;
+ let content='';
+ for(let r=0;r<draft.picks;r++)for(let c=0;c<draft.cards;c++){
+  const p=data[r][c],cx=(c+.5)*scale,cy=(r+.5)*dy;
+  // Perpendicular diagonals form a diamond; mirror its long axis with the yarn's slant.
+  const lx=p.slant*scale*.46,ly=dy*.46,sx=dy*.28,sy=-p.slant*scale*.28;
+  const points=[[cx-lx,cy-ly],[cx+sx,cy+sy],[cx+lx,cy+ly],[cx-sx,cy-sy]];
+  content+=`<polygon points="${points.map(([x,y])=>point(x,y)).join(' ')}" fill="${p.color}" stroke="#000" stroke-opacity=".15" stroke-width="${scale*.035}" stroke-linejoin="round"/><path d="M${point(cx-lx*.62,cy-ly*.62)} L${point(cx+lx*.62,cy+ly*.62)}" fill="none" stroke="#fff" stroke-opacity=".22" stroke-width="${scale*.085}" stroke-linecap="round"/>`;
+ }
+ return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" role="img" aria-label="Woven ${back?'back':'front'} preview for ${draft.cards} tablets and ${draft.picks} picks"><title>${escapeXML(draft.name)} — woven preview</title>${content}</svg>`;
+}
 
 export function resizeDraft(draft,{holes=draft.holes,cards=draft.cards,picks=draft.picks}){
 if(!Number.isInteger(holes)||holes<3||holes>8||!Number.isInteger(cards)||cards<2||cards>48||!Number.isInteger(picks)||picks<4||picks>160)throw new Error('Use 3–8 holes, 2–48 tablets, and 4–160 picks.');
